@@ -1,3 +1,3 @@
 # AutonomesFahren
 
-This repo is for the final project durin g my autonomous driving class
+This repo is for the final project during my autonomous driving class
