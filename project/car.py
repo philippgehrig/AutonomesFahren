@@ -11,6 +11,7 @@ from path_planning import PathPlanning
 class Car:
 
     def __init__(self):
+        print(self)
         self._lane_detection = LaneDetection()
         self._path_planning = PathPlanning()
         self._lateral_control = LateralControl()
@@ -26,7 +27,7 @@ class Car:
         Returns:
             List: The action to take:
                 0: steering, -1 is full left, +1 is full right
-                1: gas, 0 is no gas, 1 is full gas
+                , 11: gas, 0 is no gas, 1 is full gas
                 2: breaking, 0 is no break, 1 is full break
         """
         left_lane_boundaries, right_lane_boundaries = self._lane_detection.detect(observation)
