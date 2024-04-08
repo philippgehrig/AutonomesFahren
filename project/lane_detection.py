@@ -22,12 +22,12 @@ class LaneDetection:
         self.debug_image = None
 
     def detect(self, state_image):
-        self.img = state_image
+        self.img = np.array(state_image)[0:80, :]
         self.toGrayScale()
         self.convolution()
-        self.relu()
+        #self.relu()
         self.debug_image = self.img
-        print(self.img)
+        print(np.shape(self.img))       # shape of state_img: (96, 96)
 
     def convolution(self):
         if not self.isGrayScale:
@@ -40,17 +40,24 @@ class LaneDetection:
 #                imgCopy.putpixel((x, y), int(gray))
         self.img = imgCopy
 
+    # def toGrayScale(self):
+    #     #print(self.img.shape)
+    #     #self.img = ImageOps.grayscale(self.img)
+    #     imgCopy = np.zeros((self.img.shape[0],self.img.shape[1]))
+    #     for x in range(self.img.shape[1]):
+    #         for y in range(self.img.shape[0]):
+    #             #print(getPixel(self.img,x,y))
+    #             imgCopy[y][x] = 0.2126*getPixel(self.img,x,y)[0]+0.7152*getPixel(self.img,x,y)[1]+0.0722*getPixel(self.img,x,y)[2]
+    #     self.img = imgCopy
+    #     self.isGrayScale = True
+    #     pass
+
     def toGrayScale(self):
-        #print(self.img.shape)
-        #self.img = ImageOps.grayscale(self.img)
-        imgCopy = np.zeros((self.img.shape[0],self.img.shape[1]))
-        for x in range(self.img.shape[1]):
-            for y in range(self.img.shape[0]):
-                #print(getPixel(self.img,x,y))
-                imgCopy[y][x] = 0.2126*getPixel(self.img,x,y)[0]+0.7152*getPixel(self.img,x,y)[1]+0.0722*getPixel(self.img,x,y)[2]
-        self.img = imgCopy
+        coefficients = np.array([0.2126, 0.7152, 0.0722])
+        gray_values = np.dot(self.img, coefficients)
+        self.img = gray_values.astype(np.uint8)
         self.isGrayScale = True
-        pass
+
     
     def relu(self):
         for x in range(self.img.shape[0]):
