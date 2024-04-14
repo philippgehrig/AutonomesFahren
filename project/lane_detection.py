@@ -27,6 +27,7 @@ class LaneDetection:
         self.toGrayScale()
         self.convolution()
         self.relu()
+        self.regression()
         self.debug_image = self.img
         print(np.shape(self.img))       # shape of state_img: (96, 96)
 
@@ -76,6 +77,21 @@ class LaneDetection:
     def relu(self):
         threshold = 105
         self.img = np.where(self.img < threshold, 0, 255)
+
+    def regression(self):
+        # Fit a line to the bottom half of the image
+        y = np.arange(40, 80)
+        x = np.zeros(40)
+        for i in range(40):
+            x[i] = np.argmax(self.img[40 + i, :])
+        coefficients = np.polyfit(y, x, 4)
+        self.poly_func = np.poly1d(coefficients)
+        self.img = np.zeros((80, 80))
+        for i in range(80):
+            # Clip the predicted index to ensure it is within the valid range
+            predicted_index = int(self.poly_func(i))
+            clipped_index = np.clip(predicted_index, 0, self.img.shape[1] - 1)
+            self.img[i, clipped_index] = 255
 
     # def relu(self):
     #     for x in range(self.img.shape[0]):
