@@ -22,9 +22,10 @@ class LaneDetection:
         self.toGrayScale()
         self.convolution()
         self.relu()
-        self.regression()
+        self.calculate_path()
+        #self.regression()
         self.debug_image = self.img
-        print(np.shape(self.img))       # original shape of state_img: (96, 96)
+        #print(np.shape(self.img))       # original shape of state_img: (96, 96)
 
     def toGrayScale(self):
         coefficients = np.array([0.2126, 0.7152, 0.0722])
@@ -64,3 +65,23 @@ class LaneDetection:
             predicted_index = int(self.poly_func(i))
             clipped_index = np.clip(predicted_index, 0, self.img.shape[1] - 1)
             self.img[i, clipped_index] = 255
+
+    def calculate_path(self):
+        path_coordinates = []
+
+        for row in range(self.img.shape[0]):
+            white_pixel_indices = np.where(self.img[row] == 255)[0]
+
+            white_sections = np.split(white_pixel_indices, np.where(np.diff(white_pixel_indices) != 1)[0]+1)
+            for section in white_sections:
+                if len(section) > 0:
+                    mean_index = np.mean(section)
+                    path_coordinates.append((row, mean_index))
+
+        for coord in path_coordinates:
+            row, col = coord
+            self.img[row, int(col)] = 250
+            self.img[self.img != 250] = 0
+
+
+
