@@ -23,8 +23,8 @@ class LaneDetection:
         self.toGrayScale()
         self.convolution()
         self.relu()
-        self.regression()
-        self.debug_image = self.img 
+        self.debug_image = self.img
+        return [],[] 
 
     def toGrayScale(self):
         coefficients = np.array([0.2126, 0.7152, 0.0722])
