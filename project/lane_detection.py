@@ -4,6 +4,12 @@ import scipy
 import matplotlib.pyplot as plt
 from PIL import Image, ImageOps
 
+# Das Auto befindet sich in:
+# Zeile 67 mit Index 46 bis 49 bis
+# Zeile 76 mit Index 46 bis 49
+
+# Fahrbahnbreite: gerade Straße: Pixel 38 und 57
+
 
 convolution_factor = 1.5
 
@@ -22,7 +28,8 @@ class LaneDetection:
         self.toGrayScale()
         self.convolution()
         self.relu()
-        self.calculate_path()
+        self.find_car()
+        #self.calculate_path()
         #self.regression()
         self.debug_image = self.img
         #print(np.shape(self.img))       # original shape of state_img: (96, 96)
@@ -82,6 +89,17 @@ class LaneDetection:
             row, col = coord
             self.img[row, int(col)] = 250
             self.img[self.img != 250] = 0
+
+    def find_car(self):
+        with open("C:/Informatik/car.txt", 'a') as file:
+            for row in range(self.img.shape[0]):
+                white_pixel_indices = np.where(self.img[row] == 255)[0]
+                indices_str = f'Zeile {row}: ' + ' '.join(map(str, white_pixel_indices))
+                file.write(indices_str + '\n')
+
+
+
+
 
 
 
