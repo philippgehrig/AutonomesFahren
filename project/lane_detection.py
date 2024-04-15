@@ -25,10 +25,11 @@ class LaneDetection:
 
     def detect(self, state_image):
         self.img = np.array(state_image)[0:80, :]
+        #self.remove_car()
         self.toGrayScale()
         self.convolution()
         self.relu()
-        self.find_car()
+        self.remove_car()
         #self.calculate_path()
         #self.regression()
         self.debug_image = self.img
@@ -58,44 +59,16 @@ class LaneDetection:
         threshold = 105
         self.img = np.where(self.img < threshold, 0, 255)
 
-    def regression(self):
-        # Fit a line to the bottom half of the image
-        y = np.arange(40, 80)
-        x = np.zeros(40)
-        for i in range(40):
-            x[i] = np.argmax(self.img[40 + i, :])
-        coefficients = np.polyfit(y, x, 3)
-        self.poly_func = np.poly1d(coefficients)
-        self.img = np.zeros((80, 80))
-        for i in range(80):
-            # Clip the predicted index to ensure it is within the valid range
-            predicted_index = int(self.poly_func(i))
-            clipped_index = np.clip(predicted_index, 0, self.img.shape[1] - 1)
-            self.img[i, clipped_index] = 255
+    def remove_car(self):
+        # overwrite the pixels of the car
+        for i in range(67, 77):
+            self.img[i][46] = 0
+            self.img[i][47] = 0
+            self.img[i][48] = 0
+            self.img[i][49] = 0
+        # overwrite the wrong pixels in the last line of the image
+        self.img[79] = 0
 
-    def calculate_path(self):
-        path_coordinates = []
-
-        for row in range(self.img.shape[0]):
-            white_pixel_indices = np.where(self.img[row] == 255)[0]
-
-            white_sections = np.split(white_pixel_indices, np.where(np.diff(white_pixel_indices) != 1)[0]+1)
-            for section in white_sections:
-                if len(section) > 0:
-                    mean_index = np.mean(section)
-                    path_coordinates.append((row, mean_index))
-
-        for coord in path_coordinates:
-            row, col = coord
-            self.img[row, int(col)] = 250
-            self.img[self.img != 250] = 0
-
-    def find_car(self):
-        with open("C:/Informatik/car.txt", 'a') as file:
-            for row in range(self.img.shape[0]):
-                white_pixel_indices = np.where(self.img[row] == 255)[0]
-                indices_str = f'Zeile {row}: ' + ' '.join(map(str, white_pixel_indices))
-                file.write(indices_str + '\n')
 
 
 
