@@ -29,16 +29,17 @@ class LaneDetection:
         self.convolution()
         self.relu()
         self.remove_pixel()
-        self.debug_image = self.img
         #print(np.shape(self.img))       # original shape of state_img: (96, 96)
-        left_lane, right_lane = self.build_lanes()
-        print("Left Lane:")
-        for point in left_lane:
-            print(point)            # format: (x, y)
+        self.build_lanes(np.array(state_image)[0:80, :])
+        # left_lane, right_lane = self.build_lanes(self, state_image)
+        # print("Left Lane:")
+        # for point in left_lane:
+        #     print(point)            # format: (x, y)
 
-        print("Right Lane:")
-        for point in right_lane:
-            print(point)
+        # print("Right Lane:")
+        # for point in right_lane:
+        #     print(point)
+        self.debug_image = self.img
 
 
     def toGrayScale(self):
@@ -81,54 +82,88 @@ class LaneDetection:
         self.img[:, -1] = 0
 
 
-    def build_lanes(self):
+    def build_lanes(self, state_image):
         left_lane = []
         right_lane = []
 
         centroid = np.mean(np.where(self.img == 255)[1])
         middle_index = self.img.shape[1] // 2
+        diff = centroid - middle_index
 
         for row in range(self.img.shape[0]):
             white_pixel_indices = np.where(self.img[row] == 255)[0]
             if len(white_pixel_indices) == 2:
                 left_lane.append((row, white_pixel_indices[0]))
                 right_lane.append((row, white_pixel_indices[1]))
-            elif centroid < middle_index:
+
+                # for debugging only
+                state_image[row, white_pixel_indices[0]] = [255, 0, 0]
+                state_image[row, white_pixel_indices[1]] = [0, 0, 255]
+            elif diff <= -10:
                 # left curve
                 if len(white_pixel_indices) == 1:
                     left_lane.append((row, 'NaN'))
                     right_lane.append((row, white_pixel_indices[0]))
+
+                    # for debugging only
+                    state_image[row, white_pixel_indices[0]] = [255, 0, 0]
                 elif len(white_pixel_indices) == 3:
                     right_lane.append((row, white_pixel_indices[0]))
                     left_lane.append((row, white_pixel_indices[1]))
                     right_lane.append((row, white_pixel_indices[2]))
+
+                    # for debugging only
+                    state_image[row, white_pixel_indices[1]] = [255, 0, 0]
+                    state_image[row, white_pixel_indices[0]] = [0, 0, 255]
+                    state_image[row, white_pixel_indices[2]] = [0, 0, 255]
                 elif len(white_pixel_indices) == 4:
                     right_lane.append((row, white_pixel_indices[0]))
                     left_lane.append((row, white_pixel_indices[1]))
                     left_lane.append((row, white_pixel_indices[2]))
                     right_lane.append((row, white_pixel_indices[3]))
+
+                    # for debugging only
+                    state_image[row, white_pixel_indices[1]] = [255, 0, 0]
+                    state_image[row, white_pixel_indices[0]] = [0, 0, 255]
+                    state_image[row, white_pixel_indices[2]] = [255, 0, 0]
+                    state_image[row, white_pixel_indices[3]] = [0, 0, 255]
                 else:
                     print('more then four white pixels')
-            elif centroid > middle_index:
+            elif diff >= 10:
                 # right curve
                 if len(white_pixel_indices) == 1:
                     right_lane.append((row, 'NaN'))
                     left_lane.append((row, white_pixel_indices[0]))
+
+                    # for debugging only
+                    state_image[row, white_pixel_indices[0]] = [0, 0, 255]
                 elif len(white_pixel_indices) == 3:
                     left_lane.append((row, white_pixel_indices[0]))
                     right_lane.append((row, white_pixel_indices[1]))
                     left_lane.append((row, white_pixel_indices[2]))
+
+                    # for debugging only
+                    state_image[row, white_pixel_indices[1]] = [0, 0, 255]
+                    state_image[row, white_pixel_indices[0]] = [255, 0, 0]
+                    state_image[row, white_pixel_indices[2]] = [255, 0, 0]
                 elif len(white_pixel_indices) == 4:
                     left_lane.append((row, white_pixel_indices[0]))
                     right_lane.append((row, white_pixel_indices[1]))
                     right_lane.append((row, white_pixel_indices[2]))
                     left_lane.append((row, white_pixel_indices[3]))
+
+                    # for debugging only
+                    state_image[row, white_pixel_indices[1]] = [0, 0, 255]
+                    state_image[row, white_pixel_indices[0]] = [255, 0, 0]
+                    state_image[row, white_pixel_indices[2]] = [0, 0, 255]
+                    state_image[row, white_pixel_indices[3]] = [255, 0, 0]
                 else:
                     print('more then four white pixels')
             else:
                 print('no curve detected')
 
-        return left_lane, right_lane
+        #return left_lane, right_lane
+        self.img = state_image
 
 
 
