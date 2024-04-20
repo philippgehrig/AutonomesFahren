@@ -77,6 +77,16 @@ class LaneDetection:
         self.img[:, -1] = 0
 
     def build_lanes(self, state_image):
+
+        def check_pixel(idx, coord):
+            # idx: Index of white pixel
+            # coord: x- and y- values off the last iteration
+            part_of_lane = True
+            d = coord[-1] - idx
+            if abs(d) > 10:
+                part_of_lane = False
+            return part_of_lane
+
         left_lane = []
         right_lane = []
 
@@ -86,7 +96,7 @@ class LaneDetection:
 
         for row in range(self.img.shape[0] - 2, 0, -1):
             white_pixel_indices = np.where(self.img[row] == 255)[0]
-            if len(white_pixel_indices) == 2:
+            if len(white_pixel_indices) == 2 and abs(diff) < 10:
                 left_lane.append((row, white_pixel_indices[0]))
                 right_lane.append((row, white_pixel_indices[1]))
 
@@ -96,8 +106,8 @@ class LaneDetection:
             elif diff <= -10 and len(white_pixel_indices > 0):
                 # left curve
                 ref_pixel = white_pixel_indices[-1]
-                right = True
-                check = True
+                right = True            # indicates whether pixel belongs to right or left lane
+                check_lane = True       # necessary if picture contains more than three lanes
 
                 right_lane.append((row, white_pixel_indices[-1]))
                 state_image[row, white_pixel_indices[-1]] = [0, 0, 255]
@@ -108,7 +118,7 @@ class LaneDetection:
                         right_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
                         ref_pixel = white_pixel_indices[idx]
-                    elif right:
+                    elif distance < 29 and right:
                         right = False
                         left_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
@@ -117,23 +127,27 @@ class LaneDetection:
                         left_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
                         ref_pixel = white_pixel_indices[idx]
-                    elif not right and check:
+                    elif not right and check_lane:
                         left_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
                         ref_pixel = white_pixel_indices[idx]
-                        check = False
+                        check_lane = False
                     elif not right:
                         right_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
                         ref_pixel = white_pixel_indices[idx]
                         right = True
+                    elif distance >= 29 and right and not check_pixel(white_pixel_indices[idx], left_lane[-1]):
+                        right_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
+                        ref_pixel = white_pixel_indices[idx]
                     else:
                         print('Error Case')
             elif diff >= 10 and len(white_pixel_indices > 0):
                 # right curve
                 ref_pixel = white_pixel_indices[0]
                 left = True
-                check = True
+                check_lane = True
 
                 left_lane.append((row, white_pixel_indices[0]))
                 state_image[row, white_pixel_indices[0]] = [255, 0, 0]
@@ -144,7 +158,7 @@ class LaneDetection:
                         left_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
                         ref_pixel = white_pixel_indices[idx]
-                    elif left:
+                    elif distance < 29 and left:
                         left = False
                         right_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
@@ -153,28 +167,23 @@ class LaneDetection:
                         right_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
                         ref_pixel = white_pixel_indices[idx]
-                    elif not left and check:
+                    elif not left and check_lane:
                         right_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
                         ref_pixel = white_pixel_indices[idx]
-                        check = False
+                        check_lane = False
                     elif not left:
                         left_lane.append((row, white_pixel_indices[idx]))
                         state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
                         ref_pixel = white_pixel_indices[idx]
                         left = True
+                    elif distance >= 29 and left and not check_pixel(white_pixel_indices[idx], right_lane[-1]):
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                        ref_pixel = white_pixel_indices[idx]
                     else:
                         print('Error Case')
             else:
                 print('Error case')
 
         self.img = state_image
-
-
-
-
-
-
-
-
-
