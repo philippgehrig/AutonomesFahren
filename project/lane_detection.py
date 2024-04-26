@@ -18,7 +18,6 @@ convolutionMatrix = np.array([
     [1, 1, 1],
     [1, -8, 1],
     [1, 1, 1]])
-
 class LaneDetection:
 
     def __init__(self):
@@ -35,7 +34,7 @@ class LaneDetection:
         self.build_lanes(np.array(state_image)[0:80, :])
 
         self.debug_image = self.img
-
+        return [],[] 
 
     def toGrayScale(self):
         coefficients = np.array([0.2126, 0.7152, 0.0722])
