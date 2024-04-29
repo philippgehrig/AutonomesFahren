@@ -25,7 +25,8 @@ def run(env, input_controller: InputController):
         for point in info['trajectory']:
             if 0 < point[0] < 96 and 0 < point[1] < 84:
                 cv_image[int(point[1]), int(point[0])] = [255, 255, 255]
-
+        # add a blue dot on closest lookahead point
+        cv_image[int(lateral_control.clp[1]), int(lateral_control.clp[0])] = [0, 0, 255] 
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
         cv_image = cv2.resize(cv_image, (cv_image.shape[1] * 6, cv_image.shape[0] * 6))
         cv2.imshow('Car Racing - Lateral Control', cv_image)
