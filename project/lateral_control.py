@@ -5,7 +5,7 @@ import numpy as np
 
 class LateralControl:
 
-    def __init__(self, k=0.4, k_soft=0.8, delta_max=np.pi / 8):
+    def __init__(self, k=0.1, k_soft=0.8, delta_max=np.pi / 8):
         self._car_position = np.array([48, 64])
         self.k = k  # control gain
         self.k_soft = k_soft  # softening factor
@@ -35,7 +35,7 @@ class LateralControl:
         # Calculate the steering angle
         delta = np.arctan2(self.k * cte, speed + self.k_soft) + he
 
-        # Add a correction term
+        # Add a correction term => make steering angle smoother
         correction = 0.1  # adjust this value as needed
         delta += correction
 
@@ -51,7 +51,7 @@ class LateralControl:
         distances = np.linalg.norm(trajectory - self._car_position, axis=1)
 
         # Find the index of the lookahead point
-        lookahead_distance = 0.0  # adjust this value as needed
+        lookahead_distance = 2.0  # adjust this value as needed
         lookahead_index = np.argmin(np.abs(distances - lookahead_distance))
 
         self.clp = trajectory[lookahead_index]
