@@ -4,9 +4,9 @@ import numpy as np
 
 class LongitudinalControl:
     def __init__(self):
-        self.Kp = 0.05
-        self.Ki = 0.0
-        self.Kd = 0.0
+        self.Kp = 0.03
+        self.Ki = 0.00001
+        self.Kd = 0.00002
         self.integral = 0.0
         self.prev_error = 0.0
 
@@ -20,15 +20,15 @@ class LongitudinalControl:
 
         acceleration = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
         
-        acceleration = max(0.0, acceleration)
-        braking = max(0.0, -acceleration)
+        acceleration = acceleration
+        braking = -acceleration
 
         return acceleration, braking
 
     def predict_target_speed(self, trajectory, speed, steer_angle):
         # steer_angle: left = -1, right = 1, else = 0
-        max_speed = 50.0
-        min_speed = 5.0
+        max_speed = 80.0
+        min_speed = 35.0
         x = trajectory[:, 0]
         y = 0
 
@@ -51,10 +51,10 @@ class LongitudinalControl:
             y = -1
 
         target_speed = 0.0
-        if y >= 0:
+        if y > 0:
             # 80 is the width of the modified state_img
             target_speed = (min_speed - max_speed) / 80 * y + max_speed
-        elif steer_angle is not 0:
+        elif steer_angle != 0:
             target_speed = speed / 2
         else:
             target_speed = max_speed
