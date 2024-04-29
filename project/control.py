@@ -20,7 +20,7 @@ def run(env, input_controller: InputController):
 
     while not input_controller.quit:
         steering_angle = lateral_control.control(info['trajectory'], info['speed'])
-
+        accelerate, brake = input_controller.accelerate, input_controller.brake
         cv_image = np.asarray(state_image, dtype=np.uint8)
         for point in info['trajectory']:
             if 0 < point[0] < 96 and 0 < point[1] < 84:
@@ -34,7 +34,7 @@ def run(env, input_controller: InputController):
 
         # Step the environment
         input_controller.update()
-        a = [steering_angle, input_controller.accelerate, input_controller.brake]
+        a = [steering_angle, accelerate, brake]
         state_image, r, done, trunc, info = env.step(a)
         total_reward += r
 
