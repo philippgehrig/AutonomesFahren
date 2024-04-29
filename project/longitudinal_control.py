@@ -4,9 +4,9 @@ import numpy as np
 
 class LongitudinalControl:
     def __init__(self):
-        self.Kp = 0.03
+        self.Kp = 0.025
         self.Ki = 0.00001
-        self.Kd = 0.00002
+        self.Kd = 0.000015
         self.integral = 0.0
         self.prev_error = 0.0
 
@@ -17,6 +17,7 @@ class LongitudinalControl:
         error = speed_difference
         self.integral += error
         derivative = error - self.prev_error
+        self.prev_error = error
 
         acceleration = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
         
