@@ -43,7 +43,7 @@ class LateralControl:
         delta = np.clip(delta, -self.delta_max, self.delta_max)
 
         self.step += 1  # increment the step counter
-
+        print(delta)
         return delta
     
     def _calculate_cte(self, trajectory):

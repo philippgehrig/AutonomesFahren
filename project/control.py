@@ -9,18 +9,25 @@ import numpy as np
 from env_wrapper import CarRacingEnvWrapper
 from input_controller import InputController
 from lateral_control import LateralControl
+from longitudinal_control import LongitudinalControl
+
 
 
 def run(env, input_controller: InputController):
     lateral_control = LateralControl()
+    longitudinal_control = LongitudinalControl()
 
     seed = int(np.random.randint(0, int(1e6)))
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
+    speed_history = []
+    target_speed_history = []
 
     while not input_controller.quit:
         steering_angle = lateral_control.control(info['trajectory'], info['speed'])
-        accelerate, brake = input_controller.accelerate, input_controller.brake
+        target_speed = longitudinal_control.predict_target_speed(info['trajectory'], info['speed'], steering_angle)
+        acceleration, braking = longitudinal_control.control(info['speed'], target_speed, steering_angle)
+        
         cv_image = np.asarray(state_image, dtype=np.uint8)
         for point in info['trajectory']:
             if 0 < point[0] < 96 and 0 < point[1] < 84:
@@ -29,12 +36,12 @@ def run(env, input_controller: InputController):
         cv_image[int(lateral_control.clp[1]), int(lateral_control.clp[0])] = [0, 0, 255] 
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
         cv_image = cv2.resize(cv_image, (cv_image.shape[1] * 6, cv_image.shape[0] * 6))
-        cv2.imshow('Car Racing - Lateral Control', cv_image)
+        cv2.imshow('Car Racing - Control', cv_image)
         cv2.waitKey(1)
 
         # Step the environment
         input_controller.update()
-        a = [steering_angle, accelerate, brake]
+        a = [steering_angle, acceleration, braking]
         state_image, r, done, trunc, info = env.step(a)
         total_reward += r
 

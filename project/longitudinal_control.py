@@ -55,8 +55,6 @@ class LongitudinalControl:
         if y > 0:
             # 80 is the width of the modified state_img
             target_speed = (min_speed - max_speed) / 80 * y + max_speed
-        elif steer_angle != 0:
-            target_speed = speed / 2
         else:
             target_speed = max_speed
 
