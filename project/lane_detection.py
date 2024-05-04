@@ -122,12 +122,12 @@ class LaneDetection:
         white_idx = np.argwhere(self.img == 255)
         if len(white_idx) > 0:
             # Entferne das erste Pixel aus white_idx und füge es zu lane_1 hinzu
-            first_white_pxl = white_idx[0]
-            lane_1.append((first_white_pxl[1], first_white_pxl[0]))
-            white_idx = white_idx[1:]
+            last_white_pxl = white_idx[-1]
+            lane_1.append((last_white_pxl[1], last_white_pxl[0]))
+            white_idx = white_idx[:-1]
 
             for ref in lane_1:
-                for white_pxl in white_idx:
+                for white_pxl in reversed(white_idx):
                     dist = euclidean_distance((ref[0], ref[1]), (white_pxl[1], white_pxl[0]))
                     if dist < threshold:
                         lane_1.append((white_pxl[1], white_pxl[0]))
