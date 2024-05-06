@@ -131,8 +131,7 @@ class LaneDetection:
                         lane_1.append((white_pxl[1], white_pxl[0]))
                         white_idx = white_idx[np.any(white_idx != white_pxl, axis=1)]
 
-            for idx in white_idx:
-                lane_2.append((idx[1], idx[0]))
+            lane_2 = [(idx[1], idx[0]) for idx in white_idx]
 
             # Aufsummieren der x-Werte
             sum_lane_1 = sum(point[0] for point in lane_1)
@@ -145,3 +144,202 @@ class LaneDetection:
         else:
             print('Now white pixel found!')
             return [], []
+        
+    # Old function for lane detection
+        
+    def build_lanes(self, state_image):
+
+        # state_image is used for debugging
+
+        def check_column(idx, coord):
+            # idx: Index of white pixel
+            # coord: x- and y- values off the last iteration
+            part_of_lane = True
+            d = coord[-1] - idx
+            if abs(d) > 5:
+                part_of_lane = False
+            return part_of_lane
+        
+        def check_row(idx, ref):
+            part_of_lane = True
+            d = ref - idx
+            if abs(d) > 5:
+                part_of_lane = False
+            return part_of_lane
+
+        left_lane = []
+        right_lane = []
+
+        # initial values
+        left_lane.append((79, 38))
+        right_lane.append((79, 57))
+
+        centroid = np.mean(np.where(self.img == 255)[1])
+        middle_index = self.img.shape[1] // 2
+        diff = centroid - middle_index
+
+        for row in range(self.img.shape[0] - 2, 0, -1):
+            white_pixel_indices = np.where(self.img[row] == 255)[0]
+            if len(white_pixel_indices) == 2 and abs(diff) < 10:
+                left_lane.append((row, white_pixel_indices[0]))
+                right_lane.append((row, white_pixel_indices[1]))
+
+                # for debugging only
+                state_image[row, white_pixel_indices[0]] = [255, 0, 0]
+                state_image[row, white_pixel_indices[1]] = [0, 0, 255]
+            elif diff <= -10 and len(white_pixel_indices > 0):
+                # left curve
+                ref_pixel = white_pixel_indices[-1]
+                right_lane.append((row, white_pixel_indices[-1]))
+                state_image[row, white_pixel_indices[-1]] = [0, 0, 255]
+
+                for idx in range(len(white_pixel_indices) - 2, 0, -1):
+                    if check_column(white_pixel_indices[idx], right_lane[-1]) or check_row(white_pixel_indices[idx], ref_pixel):
+                        right_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
+                        ref_pixel = white_pixel_indices[idx]
+                    elif check_column(white_pixel_indices[-1], left_lane[-1]) or not check_row(white_pixel_indices[idx], ref_pixel):
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                        ref_pixel = white_pixel_indices[idx]
+                    elif check_column(white_pixel_indices[-1], left_lane[-1]) or check_row(white_pixel_indices[idx], ref_pixel):
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                        ref_pixel = white_pixel_indices[idx]
+                    else:
+                        print('Error case!')
+
+            elif diff >= 10 and len(white_pixel_indices > 0):
+                # right curve
+                left_lane.append((row, white_pixel_indices[0]))
+                state_image[row, white_pixel_indices[0]] = [255, 0, 0]
+
+                for idx in range(1, len(white_pixel_indices)):
+                    if check_column(white_pixel_indices[idx], left_lane[-1]):
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                    elif check_column(white_pixel_indices[-1], right_lane[-1]):
+                        right_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
+                    else:
+                        print('Error case!')
+            else:
+                print('Error case')
+
+        self.img = state_image
+        return left_lane, right_lane
+    
+    # first implemented lane detection
+
+    def build_lanes_initial(self, state_image):
+
+        def check_pixel(idx, coord):
+            # idx: Index of white pixel
+            # coord: x- and y- values off the last iteration
+            part_of_lane = True
+            d = coord[-1] - idx
+            if abs(d) > 10:
+                part_of_lane = False
+            return part_of_lane
+
+        left_lane = []
+        right_lane = []
+
+        centroid = np.mean(np.where(self.img == 255)[1])
+        middle_index = self.img.shape[1] // 2
+        diff = centroid - middle_index
+
+        for row in range(self.img.shape[0] - 2, 0, -1):
+            white_pixel_indices = np.where(self.img[row] == 255)[0]
+            if len(white_pixel_indices) == 2 and abs(diff) < 10:
+                left_lane.append((row, white_pixel_indices[0]))
+                right_lane.append((row, white_pixel_indices[1]))
+
+                # for debugging only
+                state_image[row, white_pixel_indices[0]] = [255, 0, 0]
+                state_image[row, white_pixel_indices[1]] = [0, 0, 255]
+            elif diff <= -10 and len(white_pixel_indices > 0):
+                # left curve
+                ref_pixel = white_pixel_indices[-1]
+                right = True            # indicates whether pixel belongs to right or left lane
+                check_lane = True       # necessary if picture contains more than three lanes
+
+                right_lane.append((row, white_pixel_indices[-1]))
+                state_image[row, white_pixel_indices[-1]] = [0, 0, 255]
+
+                for idx in range(len(white_pixel_indices) - 2, 0, -1):
+                    distance = ref_pixel - white_pixel_indices[idx]
+                    if distance < 5 and right:
+                        right_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
+                        ref_pixel = white_pixel_indices[idx]
+                    elif distance < 29 and right:
+                        right = False
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                        ref_pixel = white_pixel_indices[idx]
+                    elif distance < 5 and not right:
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                        ref_pixel = white_pixel_indices[idx]
+                    elif not right and check_lane:
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                        ref_pixel = white_pixel_indices[idx]
+                        check_lane = False
+                    elif not right:
+                        right_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
+                        ref_pixel = white_pixel_indices[idx]
+                        right = True
+                    elif distance >= 29 and right and not check_pixel(white_pixel_indices[idx], left_lane[-1]):
+                        right_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
+                        ref_pixel = white_pixel_indices[idx]
+                    else:
+                        print('Error Case')
+            elif diff >= 10 and len(white_pixel_indices > 0):
+                # right curve
+                ref_pixel = white_pixel_indices[0]
+                left = True
+                check_lane = True
+
+                left_lane.append((row, white_pixel_indices[0]))
+                state_image[row, white_pixel_indices[0]] = [255, 0, 0]
+
+                for idx in range(1, len(white_pixel_indices)):
+                    distance = white_pixel_indices[idx] - ref_pixel
+                    if distance < 5 and left:
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                        ref_pixel = white_pixel_indices[idx]
+                    elif distance < 29 and left:
+                        left = False
+                        right_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
+                        ref_pixel = white_pixel_indices[idx]
+                    elif distance < 5 and not left:
+                        right_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
+                        ref_pixel = white_pixel_indices[idx]
+                    elif not left and check_lane:
+                        right_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [0, 0, 255]
+                        ref_pixel = white_pixel_indices[idx]
+                        check_lane = False
+                    elif not left:
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                        ref_pixel = white_pixel_indices[idx]
+                        left = True
+                    elif distance >= 29 and left and not check_pixel(white_pixel_indices[idx], right_lane[-1]):
+                        left_lane.append((row, white_pixel_indices[idx]))
+                        state_image[row, white_pixel_indices[idx]] = [255, 0, 0]
+                        ref_pixel = white_pixel_indices[idx]
+                    else:
+                        print('Error Case')
+            else:
+                print('Error case')
+
+        self.img = state_image
+        return left_lane, right_lane
