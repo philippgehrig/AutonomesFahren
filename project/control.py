@@ -17,11 +17,13 @@ def run(env, input_controller: InputController):
     lateral_control = LateralControl()
     longitudinal_control = LongitudinalControl()
 
-    seed = int(np.random.randint(0, int(1e6)))
+    seed = 619794
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
     speed_history = []
     target_speed_history = []
+
+    print(seed)
 
     while not input_controller.quit:
         steering_angle = lateral_control.control(info['trajectory'], info['speed'])
@@ -51,9 +53,11 @@ def run(env, input_controller: InputController):
             print(f"seed: {seed:06d}     reward: {total_reward:06.2F}")
 
             input_controller.skip = False
-            seed = int(np.random.randint(0, int(1e6)))
+            seed = 619794
+            print(seed)
             state_image, info = env.reset(seed=seed)
             total_reward = 0.0
+        print("Beschleunigung; ",acceleration)
 
 
 def main():

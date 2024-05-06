@@ -47,7 +47,7 @@ class LateralControl:
         distances = np.linalg.norm(trajectory - self._car_position, axis=1)
 
         # Find the index of the lookahead point
-        lookahead_distance = 10.0  # adjust this value as needed
+        lookahead_distance = 0.0  # adjust this value as needed
         lookahead_index = np.argmin(np.abs(distances - lookahead_distance))
 
         self.clp = trajectory[lookahead_index]

@@ -11,9 +11,7 @@ class PathPlanning:
         path = cls.calculate_path(left_boundary, right_boundary)
         valid_path = cls.validate(path, distance_threshold)
         curvature = cls.calculate_curvature(valid_path)
-        # curvature_ahead = cls.calculate_curvature_ahead(path, look_ahead=10)
-        # path = cls.calculate_target_line(left_boundary, right_boundary, 0.2, curvature_ahead)
-        return path, curvature
+        return valid_path, curvature
 
     @staticmethod
     def calculate_path(left, right):
@@ -100,10 +98,83 @@ class PathPlanning:
             
 
     # Introduced BIAS Variable which can move the target line inside and outside
-    # bias = 0 => left boundry; bias = -1 =>
+    # bias = 0 => left boundry; bias = 1 => right boundry
 
-    def calculate_target_line(left_boundary, right_boundary, bias, curvature_ahead):
+    def calculate_target_line(left_boundary, right_boundary):
         
+        def calculate_curvature(path):
+            # Calculate curvature of the path
+            dx = np.gradient(path[:, 0])
+            dy = np.gradient(path[:, 1])
+
+            ddx = np.gradient(dx)
+            ddy = np.gradient(dy)
+
+            curvature = np.sum(np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5)
+            return curvature
+        
+        def calculate_curvature_ahead(path, look_ahead):
+            # Initialize an empty list to store the curvature ahead for each point
+            curvatures_ahead = []
+
+            # Loop over each point in the path
+            for i in range(len(path) - look_ahead):
+                # Determine the subset of the path that is ahead of the current position
+                path_ahead = path[i:i + look_ahead]
+
+                # Calculate curvature of the path ahead
+                dx = np.gradient(path_ahead[:, 0])
+                dy = np.gradient(path_ahead[:, 1])
+
+                ddx = np.gradient(dx)
+                ddy = np.gradient(dy)
+
+                curvature_ahead = np.sum(np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5)
+
+                # Append the curvature ahead to the list
+                curvatures_ahead.append(curvature_ahead)
+
+            # For the last 'look_ahead' points, we can't look ahead. So, we can either append zeros or copy the last computed curvature.
+            curvatures_ahead.extend([0]*look_ahead)  # or curvatures_ahead.extend([curvatures_ahead[-1]]*look_ahead)
+
+            # Convert the list of curvatures ahead to a numpy array
+            curvatures_ahead = np.array(curvatures_ahead)
+
+            return curvatures_ahead
+        
+        
+        def calculate_bias(curvatures):
+            # Define the bias for left turns, right turns, and straight paths
+            bias_left_turn = 0.8
+            bias_right_turn = 0.2
+            bias_straight = 0.5
+
+            # Calculate a moving average of the curvatures
+            window_size = 10  # Adjust this value to change how quickly the bias responds to changes in the curvature
+            curvatures_moving_average = np.convolve(curvatures, np.ones(window_size), 'valid') / window_size
+
+            # Initialize an empty list to store the bias values
+            bias = []
+
+            # Loop over the moving average of the curvatures
+            for curvature in curvatures_moving_average:
+                # If the curvature is positive, a left turn is about to happen, so increase the bias
+                if curvature > 0:
+                    bias.append(bias_left_turn)
+
+                # If the curvature is negative, a right turn is about to happen, so decrease the bias
+                elif curvature < 0:
+                    bias.append(bias_right_turn)
+
+                # If the curvature is near zero, the path ahead is straight, so return the bias to a neutral value
+                else:
+                    bias.append(bias_straight)
+
+            # Convert the list of bias values to a numpy array
+            bias = np.array(bias)
+
+            return bias
+
         if len(left_boundary) == 0 or len(right_boundary) == 0:
             if len(left_boundary):
                 return left_boundary
@@ -111,9 +182,12 @@ class PathPlanning:
                 return right_boundary
             else:
                 return []
+            
 
-        
-        # Interpolate _boundry and right boundaries
+        curvatures = calculate_curvature_ahead(left_boundary, 40)
+        bias = calculate_bias(curvatures)
+
+        # Interpolate left and right boundaries
         x_left, y_left = left_boundary[:, 0], left_boundary[:, 1]
         x_right, y_right = right_boundary[:, 0], right_boundary[:, 1]
 
@@ -124,16 +198,17 @@ class PathPlanning:
         num_points = max(len(x_left), len(x_right))
         x = np.linspace(0, len(x_left)-1, num_points)
 
-        # Adjust bias based on curvature ahead
-        adjusted_bias = bias + curvature_ahead
+        bias_interp = interp1d(np.arange(len(bias)), bias, fill_value="extrapolate")
+        bias_resampled = bias_interp(np.linspace(0, len(bias)-1, num_points))
 
         # Apply lateral offset to the middle line
-        x_middle = (1 - bias) * cs_left[0](x) + bias * cs_right[0](x) 
-        y_middle = (1 - bias) * cs_left[1](x) + bias * cs_right[1](x)
+        x_middle = (1 - bias_resampled) * cs_left[0](x) + bias_resampled * cs_right[0](x) 
+        y_middle = (1 - bias_resampled) * cs_left[1](x) + bias_resampled * cs_right[1](x)
 
         target_line = np.column_stack((x_middle, y_middle))
-        
 
         return target_line
     
+
+        
    
