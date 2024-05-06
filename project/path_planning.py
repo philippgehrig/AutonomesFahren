@@ -6,12 +6,28 @@ from scipy.optimize import minimize
 from queue import PriorityQueue
 import heapq
 class PathPlanning:
+
     @classmethod
     def plan(cls, left_boundary, right_boundary, distance_threshold=10) -> tuple[np.ndarray, float]:
-        path = cls.calculate_path(left_boundary, right_boundary)
-        valid_path = cls.validate(path, distance_threshold)
-        curvature = cls.calculate_curvature(valid_path)
-        return valid_path, curvature
+        
+
+        # 1: Normal Path Planning; 2: Target Line Path Planning
+        planing_algorithm = 1
+
+
+        # NORMAL PATH PLANING: path always in the middle of the lane
+        if planing_algorithm == 1: 
+            path = cls.calculate_path(left_boundary, right_boundary)
+            valid_path = cls.validate(path, distance_threshold)
+            curvature = cls.calculate_curvature(valid_path)
+            return valid_path, curvature
+    
+        # TARGET LINE PATH PLANNING: path based towards reducing the curvature
+        elif planing_algorithm == 2:
+            target_line = cls.calculate_target_line(left_boundary, right_boundary)
+            valid_target_line = cls.validate(target_line, distance_threshold)
+            curvature = cls.calculate_curvature(valid_target_line)
+            return valid_target_line, curvature
 
     @staticmethod
     def calculate_path(left, right):

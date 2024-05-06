@@ -20,8 +20,6 @@ def run(env, input_controller: InputController):
     seed = 619794
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
-    speed_history = []
-    target_speed_history = []
 
     print(seed)
 

@@ -142,7 +142,7 @@ class LaneDetection:
             if sum_lane_2 > sum_lane_1: return lane_1, lane_2
 
         else:
-            print('Now white pixel found!')
+            print('No white pixel found!')
             return [], []
         
     # Old function for lane detection

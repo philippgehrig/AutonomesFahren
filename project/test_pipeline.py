@@ -5,7 +5,6 @@ import argparse
 import cv2
 import gymnasium as gym
 import numpy as np
-from matplotlib import pyplot as plt
 
 from env_wrapper import CarRacingEnvWrapper
 from input_controller import InputController
@@ -25,17 +24,18 @@ def run(env, input_controller: InputController):
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
 
-    fig = plt.figure()
-    plt.ion()
-    plt.show()
     speed_history = []
     target_speed_history = []
 
     while not input_controller.quit:
+        print("lane detection")
         left_lane_boundaries, right_lane_boundaries = lane_detection.detect(state_image)
+        print("path planning")
         trajectory, curvature = path_planning.plan(left_lane_boundaries, right_lane_boundaries)
+        print("lateral control")
         steering_angle = lateral_control.control(trajectory, info['speed'])
-        target_speed = longitudinal_control.predict_target_speed(curvature)
+        print("longnitudal control")
+        target_speed = longitudinal_control.predict_target_speed(trajectory, info['speed'], steering_angle)
         acceleration, braking = longitudinal_control.control(info['speed'], target_speed, steering_angle)
 
         speed_history.append(info['speed'])
@@ -50,15 +50,6 @@ def run(env, input_controller: InputController):
             cv_image = cv2.resize(cv_image, (cv_image.shape[1] * 6, cv_image.shape[0] * 6))
             cv2.imshow('Car Racing - Pipeline', cv_image)
             cv2.waitKey(1)
-
-            # Longitudinal control plot
-            plt.gcf().clear()
-            plt.plot(speed_history, c="green")
-            plt.plot(target_speed_history)
-            try:
-                fig.canvas.flush_events()
-            except:
-                pass
 
         # Step the environment
         a = [steering_angle, acceleration, braking]
