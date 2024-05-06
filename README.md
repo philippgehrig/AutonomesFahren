@@ -5,7 +5,7 @@ This repository containts the final project for our course: T3INF4901 Autonomes 
 
 ## Contriburors
 
-student number (Philipp Gehrig): 5622763
+student number (Philipp Gehrig): 5622763  
 student number (Jona Bergmann): 
 
 
