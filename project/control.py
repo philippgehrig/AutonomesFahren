@@ -20,7 +20,9 @@ def run(env, input_controller: InputController):
     longitudinal_control = LongitudinalControl()
     path_planning = PathPlanning()
 
-    seed = 56886 #619794 #int(np.random.randint(0, int(1e6)))
+    # Schwierige Seeds: 2(U-Turn), 3(Error), 5(Error), 6(Kurve), 7(Error), 8(Kurve)
+
+    seed = int(np.random.randint(0, int(1e6)))
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
 

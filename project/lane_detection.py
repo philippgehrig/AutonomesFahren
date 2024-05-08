@@ -17,29 +17,30 @@ class LaneDetection:
         self.relu()
         lane_1, lane_2, rest = self.area_detection()
         left, right = self.detect_lane_boundaries(lane_1, lane_2)
+        self.debug_image = state_image
 
         # for debugging only
 
-        first_image = np.array(state_image)[0:80, :]
-        for point in lane_1:
-            first_image[point[1], point[0]] = [255, 0, 0]
-        for point in lane_2:
-            first_image[point[1], point[0]] = [0, 0, 255]
-        for point in rest:
-            first_image[point[1], point[0]] = [0, 255, 0]
+        # first_image = np.array(state_image)[0:80, :]
+        # for point in lane_1:
+        #     first_image[point[1], point[0]] = [255, 0, 0]
+        # for point in lane_2:
+        #     first_image[point[1], point[0]] = [0, 0, 255]
+        # for point in rest:
+        #     first_image[point[1], point[0]] = [0, 255, 0]
 
-        second_image = np.array(state_image)[0:80, :]
-        for point in left:
-            second_image[point[1], point[0]] = [255, 0, 0]
-        for point in right:
-            second_image[point[1], point[0]] = [0, 0, 255]
+        # second_image = np.array(state_image)[0:80, :]
+        # for point in left:
+        #     second_image[point[1], point[0]] = [255, 0, 0]
+        # for point in right:
+        #     second_image[point[1], point[0]] = [0, 0, 255]
 
         
-        # self.img = np.stack((self.img,) * 3, axis=-1)
-        # lane_detection_test_image = np.concatenate((self.img, first_image), axis=1)
-        # self.debug_image = lane_detection_test_image
-        detect_boundries_test_image = np.concatenate((first_image, second_image), axis=1)
-        self.debug_image = detect_boundries_test_image
+        # # self.img = np.stack((self.img,) * 3, axis=-1)
+        # # lane_detection_test_image = np.concatenate((self.img, first_image), axis=1)
+        # # self.debug_image = lane_detection_test_image
+        # detect_boundries_test_image = np.concatenate((first_image, second_image), axis=1)
+        # self.debug_image = detect_boundries_test_image
 
         return left, right
     
