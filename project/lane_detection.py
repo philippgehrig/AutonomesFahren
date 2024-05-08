@@ -121,9 +121,9 @@ class LaneDetection:
             left_lane = lane_1 if lane_1_score < lane_2_score else lane_2
             right_lane = lane_1 if lane_1_score >= lane_2_score else lane_2
         else:
-            print('Error: Value of lanes are None!')
-            left_lane = []
-            right_lane = []
+            print('Error: Value of lanes are 0 or None!')
+            left_lane = [(38, 70), (38, 71)]
+            right_lane = [(57, 70), (57, 71)]
 
         return left_lane, right_lane
 

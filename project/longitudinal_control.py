@@ -11,52 +11,74 @@ class LongitudinalControl:
         self.prev_error = 0.0
 
     def control(self, current_speed, target_speed, steer_angle):
-        speed_difference = target_speed - current_speed
-
+        max_angle = 0.392699082
+        steer_angle = abs(steer_angle)
+        if steer_angle < 0.01: steer_angle = 0
+        if steer_angle > max_angle: steer_angle = max_angle
+        print(f'steer angle: {steer_angle}')
         # PID-Controller
-        error = speed_difference
+        error = target_speed - current_speed
         self.integral += error
         derivative = error - self.prev_error
         self.prev_error = error
 
         acceleration = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
+
+        if steer_angle <= max_angle:
+            acceleration = acceleration - acceleration / (64 * max_angle) * steer_angle
+        else:
+            acceleration = 0.75 * acceleration
         
+        
+        print(f'acceleration: {acceleration}')
         acceleration = acceleration
         braking = -acceleration
 
         return acceleration, braking
 
-    def predict_target_speed(self, trajectory, speed, steer_angle):
-        # steer_angle: left = -1, right = 1, else = 0
-        max_speed = 80.0
-        min_speed = 35.0
-        x = trajectory[:, 0]
-        y = 0
+    # function for test_longitudinal_control.py
 
-        x_mean = np.mean(x)
-        x_min = np.amin(x)
-        x_max = np.amax(x)
+    # def predict_target_speed(self, trajectory, speed, steer_angle):
+    #     # steer_angle: left = -1, right = 1, else = 0
+    #     max_speed = 80.0
+    #     min_speed = 35.0
+    #     x = trajectory[:, 0]
+    #     y = 0
 
-        diff_min = x_mean - x_min
-        diff_max = x_max - x_mean
+    #     x_mean = np.mean(x)
+    #     x_min = np.amin(x)
+    #     x_max = np.amax(x)
 
-        if diff_min > 10 or steer_angle == -1:
-            min_index = np.argmin(trajectory[:, 0])
+    #     diff_min = x_mean - x_min
+    #     diff_max = x_max - x_mean
 
-            y = trajectory[min_index, 1]
-        elif diff_max > 10 or steer_angle == 1:
-            max_index = np.argmax(trajectory[:, 0])
+    #     if diff_min > 10 or steer_angle == -1:
+    #         min_index = np.argmin(trajectory[:, 0])
 
-            y = trajectory[max_index, 1]
-        else:
-            y = -1
+    #         y = trajectory[min_index, 1]
+    #     elif diff_max > 10 or steer_angle == 1:
+    #         max_index = np.argmax(trajectory[:, 0])
 
-        target_speed = 0.0
-        if y > 0:
-            # 80 is the width of the modified state_img
-            target_speed = (min_speed - max_speed) / 80 * y + max_speed
-        else:
-            target_speed = max_speed
+    #         y = trajectory[max_index, 1]
+    #     else:
+    #         y = -1
 
-        return target_speed
+    #     target_speed = 0.0
+    #     if y > 0:
+    #         # 80 is the width of the modified state_img
+    #         target_speed = (min_speed - max_speed) / 80 * y + max_speed
+    #     else:
+    #         target_speed = max_speed
+
+    #     return target_speed
     
+    # function for car.py
+
+    def predict_target_speed(self, curvature):
+        max_speed = 80
+        min_speed = 35
+        max_curvature = 20
+
+        curvature = min(curvature, max_curvature)
+        target_speed = max_speed - ((max_speed - min_speed) / max_curvature) * curvature
+        return target_speed
