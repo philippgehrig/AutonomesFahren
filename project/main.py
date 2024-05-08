@@ -53,23 +53,14 @@ def evaluate(env, eval_runs=50, eval_length=600):
 
 
 def main():
-    print("debug 1")
     parser = argparse.ArgumentParser()
-    print("debug 2")
     parser.add_argument("--no_display", action="store_true", default=False)
-    print("debug 3")
     parser.add_argument("--domain_randomize", action="store_true", default=False)
-    print("debug 4")
     args = parser.parse_args()
-    print("debug 5")
     render_mode = 'rgb_array' if args.no_display else 'human'
-    print("debug 6")
     env = CarRacingEnvWrapper(gym.make("CarRacing-v2", render_mode=render_mode, domain_randomize=args.domain_randomize))
-    print("debug 7")
     evaluate(env, eval_length=1000)
-    print("debug 8")
     env.reset()
-    print("debug 9")
 
 if __name__ == '__main__':
     main()
