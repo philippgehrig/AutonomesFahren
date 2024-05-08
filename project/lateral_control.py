@@ -5,7 +5,7 @@ import numpy as np
 
 class LateralControl:
 
-    def __init__(self, k=0.25, k_soft=0.7, delta_max=np.pi / 8):
+    def __init__(self, k=0.35, k_soft=0.7, delta_max=np.pi / 8):
         self._car_position = np.array([48, 64])
         self.k = k  # control gain
         self.k_soft = k_soft  # softening factor
@@ -39,7 +39,6 @@ class LateralControl:
         delta = np.clip(delta, -self.delta_max, self.delta_max)
 
         self.step += 1  # increment the step counter
-        print(delta)
         return delta
     
     def _calculate_cte(self, trajectory):
@@ -47,7 +46,7 @@ class LateralControl:
         distances = np.linalg.norm(trajectory - self._car_position, axis=1)
 
         # Find the index of the lookahead point
-        lookahead_distance = 10.0  # adjust this value as needed
+        lookahead_distance = 5.0  # adjust this value as needed
         lookahead_index = np.argmin(np.abs(distances - lookahead_distance))
 
         self.clp = trajectory[lookahead_index]

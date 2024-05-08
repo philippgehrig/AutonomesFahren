@@ -8,24 +8,29 @@ import numpy as np
 
 from env_wrapper import CarRacingEnvWrapper
 from input_controller import InputController
+from lane_detection import LaneDetection
+from path_planning import PathPlanning
 from lateral_control import LateralControl
 from longitudinal_control import LongitudinalControl
 
 
-
 def run(env, input_controller: InputController):
+    lane_detection = LaneDetection()
     lateral_control = LateralControl()
     longitudinal_control = LongitudinalControl()
+    path_planning = PathPlanning()
 
-    seed = int(np.random.randint(0, int(1e6)))
+    seed = 56886 #619794 #int(np.random.randint(0, int(1e6)))
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
-    speed_history = []
-    target_speed_history = []
 
     while not input_controller.quit:
+        left_lane_boundaries, right_lane_boundaries = lane_detection.detect(state_image)
+        # trajectory, curvature = path_planning.plan(info['left_lane_boundary'], info['right_lane_boundary'])
+        trajectory, curvature = path_planning.plan(left_lane_boundaries, right_lane_boundaries)
         steering_angle = lateral_control.control(info['trajectory'], info['speed'])
-        target_speed = longitudinal_control.predict_target_speed(info['trajectory'], info['speed'], steering_angle)
+        # target_speed = longitudinal_control.predict_target_speed(info['trajectory'], info['speed'], steering_angle)
+        target_speed = longitudinal_control.predict_target_speed(curvature)
         acceleration, braking = longitudinal_control.control(info['speed'], target_speed, steering_angle)
         
         cv_image = np.asarray(state_image, dtype=np.uint8)
