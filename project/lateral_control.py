@@ -58,7 +58,13 @@ class LateralControl:
         lookahead_index = np.argmin(np.abs(distances + lookahead_distance))
 
         self.clp = trajectory[lookahead_index]
-        self.sclp = trajectory[lookahead_index + 1]
+        
+        # Check if the lookahead index is valid
+        if lookahead_index + 1 >= len(trajectory):
+            print("Lookahead index out of bounds") #debug message
+            self.sclp = None
+        else:
+            self.sclp = trajectory[lookahead_index + 1]
 
 
         # SHARP LEFT TRUN AHEAD
