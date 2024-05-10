@@ -2,8 +2,6 @@ from __future__ import annotations
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.interpolate import CubicSpline
-from scipy.optimize import minimize
-from queue import PriorityQueue
 import heapq
 class PathPlanning:
 
@@ -29,9 +27,20 @@ class PathPlanning:
             curvature = cls.calculate_curvature(valid_target_line)
             return valid_target_line, curvature
 
+
     @staticmethod
     def calculate_path(left, right):
-        #Check if only lane is availible on the screen
+        """
+        Calculates the middle path between the left and right boundaries.
+
+        Args:
+            left (list): List of points representing the left boundary.
+            right (list): List of points representing the right boundary.
+
+        Returns:
+            numpy.ndarray: Array of points representing the middle path.
+        """
+        # Check if only lane is available on the screen
         if len(left) == 0 or len(right) == 0:
             if len(left):
                 return left
@@ -65,7 +74,16 @@ class PathPlanning:
  
     @staticmethod
     def validate(middle, distance_threshold) -> np.ndarray:
-        # Convert lists to numpy arrays before subtracting
+        """
+        Validates the given middle points of a path based on the distance threshold.
+
+        Args:
+            middle (np.ndarray): The middle points of the path.
+            distance_threshold (float): The maximum allowed distance between consecutive points.
+
+        Returns:
+            np.ndarray: The valid middle points of the path.
+        """
         middle = np.array(middle)
         distances = np.linalg.norm(middle[1:] - middle[:-1], axis=1)
         mask = distances <= distance_threshold
@@ -73,6 +91,16 @@ class PathPlanning:
         return valid_points
 
     def calculate_curvature(path):
+        """
+        Calculate the curvature of a given path.
+
+        Parameters:
+        path (numpy.ndarray): The path coordinates as a 2D numpy array.
+
+        Returns:
+        float: The curvature of the path.
+
+        """
         # Calculate curvature of the path
         dx = np.gradient(path[:, 0])
         dy = np.gradient(path[:, 1])
