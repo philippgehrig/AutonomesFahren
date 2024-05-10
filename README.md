@@ -124,6 +124,91 @@ return valid_points
 
 ### Lateral Control
 
+Lateral Control has curerently implemented a modified Stanley Contoller.
+
+INPUT PARAMETER:
+
+- trajectory: valid points from path planning
+- speed: current speed of the car
+
+INITAL VARIABLES:
+
+- car-position: position of car 2-dimensional array
+- k: control gain factor
+- k_soft: control softening factor
+- delta_max: maximum steering angle
+- step: step counter
+- clp: closest lookahead point
+
+USED LIBARIES:
+
+- numpy
+
+OUTPUT PARAMETER:
+
+- delta: steering angle as value of -1 (hard left) to +1 (hard right)
+
+First of all the trajectory needs to be validated:
+
+```python
+if len(trajectory) == 0:
+    print("Trajectory = 0") # debug message
+    return 0 # car should not steer if no trajectory is found
+```
+
+Once the trajectory has been validated, we can calculate the Cross Track Erorr:
+
+```python
+import numpy as np
+
+def _calculate_cte(self, trajectory):
+    # Calculate the distance to each point on the trajectory
+    distances = np.linalg.norm(trajectory - self._car_position, axis=1)
+
+    # Find the index of the lookahead point
+    lookahead_distance = 0.0  # adjust this value as needed
+    lookahead_index = np.argmin(np.abs(distances - lookahead_distance))
+
+    self.clp = trajectory[lookahead_index]
+
+    # Calculate the cross-track error as the distance to the lookahead point
+    cte = distances[lookahead_index]
+
+    return cte, lookahead_index
+```
+
+In this Cross Track-Error is the modification in comparison to the normal Stanley Controller. By adding a lookahead distance we can modify the outputs to some degree. However during testing we realised that 0.0 (which basically removes the modification) works best for the Stanley Controller.
+
+Now the lookahead_index need to be validated, so that it is element of the trajectory:
+
+```python
+if(len(trajectory) < lookahead_index + 2):
+    print("Trajectory index out of bounds") #debug message
+    return 0 # car should not steer if trajectory index is out of bounds
+```
+
+Now we can calculate the heading angle the car needs to take in akkording to the Stanley Controller Formula:
+
+```python
+import numpy as np
+
+desired_heading_angle = np.arctan2(trajectory[lookahead_index + 1, 1] - trajectory[lookahead_index, 1], trajectory[lookahead_index + 1, 0] - trajectory[lookahead_index, 0])
+current_heading_angle = np.arctan2(self._car_position[1] - trajectory[0, 1], self._car_position[0] - trajectory[0, 0])
+he = desired_heading_angle - current_heading_angle if self.step > 10 else 0  # ignore the heading error for the first 10 frame => zoom in
+```
+
+With the heading angle we can finally calculate delta
+
+```python
+import numpy as np
+
+# Calculate the steering angle
+delta = np.arctan2(self.k * cte, speed + self.k_soft) + he
+
+# Limit the steering angle
+delta = np.clip(delta, -self.delta_max, self.delta_max)
+```
+
 ## Contribunting
 
 Since this project is graded we unfortunately cannot accept any contributions at the moment!

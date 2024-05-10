@@ -5,20 +5,34 @@ import numpy as np
 
 class LateralControl:
 
-    def __init__(self, k=0.25, k_soft=0.7, delta_max=np.pi / 8):
+    def __init__(self):
         self._car_position = np.array([48, 64])
-        self.k = k  # control gain
-        self.k_soft = k_soft  # softening factor
-        self.delta_max = delta_max  # max steering angle
+        self.k = 0.25  # control gain
+        self.k_soft = 0.7  # softening factor
+        self.delta_max = np.pi / 8  # max steering angle
         self.step = 0  # add a step counter
         self.clp = [0,0]  # closest lookahead point
 
     def control(self, trajectory, speed):
+        """
+        Controls the lateral movement of the car based on the given trajectory and speed.
+
+        Args:
+            trajectory (numpy.ndarray): The trajectory of the car.
+            speed (float): The current speed of the car.
+
+        Returns:
+            float: The calculated steering angle.
+
+        Raises:
+            None
+
+        """
 
         # Check if the trajectory is empty
         if len(trajectory) == 0:
             print("Trajectory = 0") # debug message
-            return 0
+            return 0 # car should not steer if no trajectory is found
         
         # Calculate the cross-track error
         cte , lookahead_index = self._calculate_cte(trajectory)
@@ -26,7 +40,7 @@ class LateralControl:
         # Check if the lookahead index is valid
         if(len(trajectory) < lookahead_index + 2):
             print("Trajectory index out of bounds") #debug message
-            return 0
+            return 0 # car should not steer if trajectory index is out of bounds
         
 
         desired_heading_angle = np.arctan2(trajectory[lookahead_index + 1, 1] - trajectory[lookahead_index, 1], trajectory[lookahead_index + 1, 0] - trajectory[lookahead_index, 0])    
@@ -43,6 +57,16 @@ class LateralControl:
         return delta
     
     def _calculate_cte(self, trajectory):
+        """
+        Calculates the cross-track error (cte) and the index of the lookahead point.
+
+        Parameters:
+        trajectory (numpy.ndarray): The trajectory points.
+
+        Returns:
+        cte (float): The cross-track error.
+        lookahead_index (int): The index of the lookahead point in the trajectory.
+        """
         # Calculate the distance to each point on the trajectory
         distances = np.linalg.norm(trajectory - self._car_position, axis=1)
 
