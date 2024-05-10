@@ -40,8 +40,8 @@ class LateralControl:
         
         else:
             desired_heading_angle = np.arctan2(trajectory[lookahead_index +1, 0] - trajectory[lookahead_index, 0], trajectory[lookahead_index+1, 1] - trajectory[lookahead_index, 1])    
-            current_heading_angle =  np.pi /2 #np.arctan2(self._car_position[1] - trajectory[0, 1], self._car_position[0] - trajectory[0, 0])
-            he = desired_heading_angle if self.step > 10 else 0  # ignore the heading error for the first 10 frame => zoom in
+            current_heading_angle = np.arctan2(self._car_position[1] - trajectory[0, 1], self._car_position[0] - trajectory[0, 0])
+            he = desired_heading_angle - current_heading_angle if self.step > 10 else 0  # ignore the heading error for the first 10 frame => zoom in
         # Calculate the steering angle
         print("speed", speed)
         delta = np.arctan2(self.k * cte, speed + self.k_soft) + he * 0.8
