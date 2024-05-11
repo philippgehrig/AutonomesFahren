@@ -18,8 +18,8 @@ class LaneDetection:
         self.relu()
         lanes = self.area_detection()
         left, right = self.detect_lane_boundaries(lanes)
-        # left = self.merge_points(left)
-        # right = self.merge_points(right)
+        # left = self.thin_out_lines(left)
+        # right = self.thin_out_lines(right)
         self.debug_image = state_image
 
         # for debugging only
@@ -135,9 +135,8 @@ class LaneDetection:
         else:
             return [], []
     
-    def merge_points(self, lane):
-        # for right lane: smallest x-value per y-value
-        # for left lane: highest x-value per y-value
+    def thin_out_lines(self, lane):
+        # A lane can have a maximum of 2 pixels
         new_lane = []
 
         y_value = None
