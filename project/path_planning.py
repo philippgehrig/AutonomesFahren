@@ -4,11 +4,14 @@ from scipy.interpolate import interp1d
 from scipy.interpolate import CubicSpline
 import heapq
 class PathPlanning:
+    def __init__(self):
+        self.debug = 0
+        pass
+
 
     @classmethod
     def plan(cls, left_boundary, right_boundary, distance_threshold=10) -> tuple[np.ndarray, float]:
         
-
         # 1: Normal Path Planning; 2: Target Line Path Planning
         planing_algorithm = 1
 
@@ -84,6 +87,9 @@ class PathPlanning:
         Returns:
             np.ndarray: The valid middle points of the path.
         """
+        if(len(middle) == 0):
+            return np.array([])
+
         middle = np.array(middle)
         distances = np.linalg.norm(middle[1:] - middle[:-1], axis=1)
         mask = distances <= distance_threshold
@@ -101,6 +107,10 @@ class PathPlanning:
         float: The curvature of the path.
 
         """
+        if(len(path) == 0):
+            return 0
+
+
         # Calculate curvature of the path
         if np.count_nonzero(~np.isnan(path[:, 0])) >= 2:
             dx = np.gradient(path[:, 0])

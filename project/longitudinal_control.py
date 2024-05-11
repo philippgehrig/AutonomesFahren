@@ -4,6 +4,7 @@ import numpy as np
 
 class PIDController:
     def __init__(self, Kp: float, Ki: float, Kd: float):
+        self.debug = 0
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
@@ -35,6 +36,8 @@ class LongitudinalControl:
             acceleration -= acceleration / (64 * max_angle) * steer_angle
         else:
             acceleration *= 0.75
+
+        acceleration = np.clip(acceleration, 0, 1)
 
         return acceleration, -braking
 

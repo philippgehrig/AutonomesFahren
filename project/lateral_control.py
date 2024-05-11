@@ -13,6 +13,7 @@ class LateralControl:
         self.step = 0  # add a step counter
         self.clp = [0,0]  # closest lookahead point
         self.sclp = [0,0]  # second closest lookahead point
+        self.debug = 0 # debug flag
 
     def control(self, trajectory, speed):
         """
@@ -45,10 +46,12 @@ class LateralControl:
         
         if(sharp_turn_flag == 1):
             # SHARP LEFT TURN => steer right with 0.3 until normal CLP can be calculated again
+            print("SHARP LEFT")
             return 0.3
         
         elif(sharp_turn_flag == 2):
             # SHARP RIGHT TURN => steer left with -0.3 until normal CLP can be calculated again
+            print("SHARP RIGHT")
             return -0.3    
         
         else:
@@ -61,6 +64,7 @@ class LateralControl:
         delta = np.clip(delta, -self.delta_max, self.delta_max)
 
         self.step += 1  # increment the  dstep counter
+        if(self.debug): print("DELTA: ", delta)
         return delta
     
     def _calculate_cte(self, trajectory):

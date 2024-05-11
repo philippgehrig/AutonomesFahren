@@ -9,6 +9,8 @@ class LaneDetection:
 
     def __init__(self):
         self.debug_image = None
+        self.stepc = 0
+        self.debug = 0
 
     def detect(self, state_image):
         self.img = np.array(state_image)[0:80, :]
@@ -19,28 +21,30 @@ class LaneDetection:
         left, right = self.detect_lane_boundaries(lane_1, lane_2)
         self.debug_image = state_image
 
-        # for debugging only
+        if(self.debug):
+            first_image = np.array(state_image)[0:80, :]
+            for point in lane_1:
+                first_image[point[1], point[0]] = [255, 0, 0]
+            for point in lane_2:
+                first_image[point[1], point[0]] = [0, 0, 255]
+            for point in rest:
+                first_image[point[1], point[0]] = [0, 255, 0]
 
-        # first_image = np.array(state_image)[0:80, :]
-        # for point in lane_1:
-        #     first_image[point[1], point[0]] = [255, 0, 0]
-        # for point in lane_2:
-        #     first_image[point[1], point[0]] = [0, 0, 255]
-        # for point in rest:
-        #     first_image[point[1], point[0]] = [0, 255, 0]
+            second_image = np.array(state_image)[0:80, :]
+            for point in left:
+                second_image[point[1], point[0]] = [255, 0, 0]
+            for point in right:
+                second_image[point[1], point[0]] = [0, 0, 255]
 
-        # second_image = np.array(state_image)[0:80, :]
-        # for point in left:
-        #     second_image[point[1], point[0]] = [255, 0, 0]
-        # for point in right:
-        #     second_image[point[1], point[0]] = [0, 0, 255]
+            
+            self.img = np.stack((self.img,) * 3, axis=-1)
+            lane_detection_test_image = np.concatenate((self.img, first_image), axis=1)
+            self.debug_image = lane_detection_test_image
+            detect_boundries_test_image = np.concatenate((first_image, second_image), axis=1)
+            self.debug_image = detect_boundries_test_image
 
-        
-        # # self.img = np.stack((self.img,) * 3, axis=-1)
-        # # lane_detection_test_image = np.concatenate((self.img, first_image), axis=1)
-        # # self.debug_image = lane_detection_test_image
-        # detect_boundries_test_image = np.concatenate((first_image, second_image), axis=1)
-        # self.debug_image = detect_boundries_test_image
+        left = np.array(left)
+        right = np.array(right)
 
         return left, right
     
@@ -115,11 +119,10 @@ class LaneDetection:
             left_lane = lane_1 if lane_1_score < lane_2_score else lane_2
             right_lane = lane_1 if lane_1_score >= lane_2_score else lane_2
         else:
-            print('Error: Value of lanes are 0 or None!')
+            if(self.debug):
+                print('Error: Value of lanes are 0 or None!')
             # Standardwerte während das state_image reinzoomt
-            left_lane = [(38, 70), (38, 71)]
-            right_lane = [(57, 70), (57, 71)]
-
+            return [], []
         return left_lane, right_lane
 
 
