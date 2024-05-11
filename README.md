@@ -142,7 +142,7 @@ IMPORT PARAMETER:
 - right: 2-dimensional Array with the right border
 - distance_threshold: maximum distance between middle points for validation of points
 
-USED LIBARYS:
+USED LIBARIES:
 
 - NUMPY
 - SCIPY
@@ -239,6 +239,72 @@ return valid_points
 ```
 
 ### Longintudal Control
+
+INPUT PARAMETER:
+
+- curvature
+- current_speed
+- steering_angle
+
+USED LIBRARIES:
+
+- NUMPY
+
+OUTPUT PARAMETER:
+
+- acceleration
+- braking
+
+A PID controller is used for longitudinal control:
+
+```python
+class PIDController:
+    def __init__(self, Kp: float, Ki: float, Kd: float):
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
+        self.integral = 0.0
+        self.prev_error = 0.0
+
+    def control(self, target, current):
+        error = target - current
+        self.integral += error
+        derivative = error - self.prev_error
+        self.prev_error = error
+        return self.Kp * error + self.Ki * self.integral + self.Kd * derivative
+```
+
+Firstly, the curvature of the lane is used to calculate the target speed of the vehicle. If the curvature is minimal, the speed should be maximum and vice versa. If the value of the curvature is between the minimum and maximum, the speed value should be interpolated linearly:
+
+```python
+max_speed = 80
+min_speed = 35
+max_curvature = 20
+
+curvature = min(curvature, max_curvature)
+target_speed = max_speed - ((max_speed - min_speed) / max_curvature) * curvature
+```
+
+The control is performed via the difference between the calculated target speed and the actual speed to calculate the acceleration. This is reduced again if there is a significant steering angle:
+
+```python
+max_angle = 0.392699082
+steer_angle = max(min(abs(steer_angle), max_angle), 0) if steer_angle >= 0.01 else 0
+# Not necessary for braking because the car will break in front of the curve
+if steer_angle <= max_angle:
+    acceleration -= acceleration / (64 * max_angle) * steer_angle
+else:
+    acceleration *= 0.75
+```
+
+The parameterisation of the values - e.g. the maximum steering angle - was based on the values determined from the test runs of the other modules. The parameters for the PID controller were also determined experimentally. Calculating the values according to Ziegler-Nichols did not work because no dynamic oscillation of the current velocity could be set.
+
+```python
+self.acceleration_controller = PIDController(0.035, 0.00001, 0.00015)
+self.braking_controller = PIDController(0.008, 0.00001, 0.002)
+```
+
+The brake controller responds less aggressively to avoid unnecessary heavy braking.
 
 ### Lateral Control
 
