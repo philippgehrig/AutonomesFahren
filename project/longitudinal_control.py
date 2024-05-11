@@ -27,8 +27,12 @@ class LongitudinalControl:
         max_angle = 0.392699082
         steer_angle = max(min(abs(steer_angle), max_angle), 0) if steer_angle >= 0.01 else 0
 
-        acceleration = self.acceleration_controller.control(target_speed, current_speed)
-        braking = self.braking_controller.control(target_speed, current_speed)
+        if target_speed >= current_speed:
+            acceleration = self.acceleration_controller.control(target_speed, current_speed)
+            braking = 0
+        else:
+            acceleration = 0
+            braking = self.braking_controller.control(target_speed, current_speed)
 
         # Not necessary for braking because the car will break in front of the curve
         if steer_angle <= max_angle:
@@ -36,7 +40,7 @@ class LongitudinalControl:
         else:
             acceleration *= 0.75
 
-        return acceleration, -braking
+        return min(acceleration, 1), -min(braking, 1)
 
     def predict_target_speed(self, curvature):
         max_speed = 80
