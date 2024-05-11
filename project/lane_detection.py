@@ -21,28 +21,32 @@ class LaneDetection:
 
         # for debugging only
 
-        # first_image = np.array(state_image)[0:80, :]
-        # for point in lane_1:
-        #     first_image[point[1], point[0]] = [255, 0, 0]
-        # for point in lane_2:
-        #     first_image[point[1], point[0]] = [0, 0, 255]
-        # for point in rest:
-        #     first_image[point[1], point[0]] = [0, 255, 0]
+        debug_flag = 2
+        if debug_flag == 1:     # test image for lane detection
+            self.img = np.stack((self.img,) * 3, axis=-1)
+            test_image = np.concatenate((self.img, first_image), axis=1)
+            self.debug_image = test_image
+        elif debug_flag == 2:   # test image for boundry detection
+            first_image = np.array(state_image)[0:80, :]
+            for point in lane_1:
+                first_image[point[1], point[0]] = [255, 0, 0]
+            for point in lane_2:
+                first_image[point[1], point[0]] = [0, 0, 255]
+            for point in rest:
+                first_image[point[1], point[0]] = [0, 255, 0]
 
-        # second_image = np.array(state_image)[0:80, :]
-        # for point in left:
-        #     second_image[point[1], point[0]] = [255, 0, 0]
-        # for point in right:
-        #     second_image[point[1], point[0]] = [0, 0, 255]
-
+            second_image = np.array(state_image)[0:80, :]
+            for point in left:
+                second_image[point[1], point[0]] = [255, 0, 0]
+            for point in right:
+                second_image[point[1], point[0]] = [0, 0, 255]
         
-        # # self.img = np.stack((self.img,) * 3, axis=-1)
-        # # lane_detection_test_image = np.concatenate((self.img, first_image), axis=1)
-        # # self.debug_image = lane_detection_test_image
-        # detect_boundries_test_image = np.concatenate((first_image, second_image), axis=1)
-        # self.debug_image = detect_boundries_test_image
+            test_image = np.concatenate((first_image, second_image), axis=1)
+            self.debug_image = test_image
+        else:
+            self.debug_image = state_image
 
-        return left, right
+        return np.array(left), np.array(right)
     
     def toGrayScale(self):
         coefficients = np.array([0.2126, 0.7152, 0.0722])
@@ -119,7 +123,6 @@ class LaneDetection:
             # Standardwerte während das state_image reinzoomt
             left_lane = [(38, 70), (38, 71)]
             right_lane = [(57, 70), (57, 71)]
-
         return left_lane, right_lane
 
 
