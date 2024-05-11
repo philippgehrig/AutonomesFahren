@@ -54,10 +54,6 @@ class PathPlanning:
             else:
                 return []
 
-        # Convert to numpy arrays
-        left = np.array(left)
-        right = np.array(right)
-
         # Create an array of x values from 0 to 1
         x = np.linspace(0, 1, max(len(left), len(right)))
 
@@ -146,7 +142,7 @@ class PathPlanning:
 
         if len(path) == 0:
             return []
-        print("Curvature [",type(curvature), "]:",  curvature)
+        #print("Curvature [",type(curvature), "]:",  curvature)
         
         if np.isscalar(curvature):
             curvature = [curvature]
@@ -161,15 +157,15 @@ class PathPlanning:
         if any(point > 40 for point in next_points):
             path = np.array(path)
             path = path[::-1]  # Invert the path
-            step = 5
+            step = 1
             path = path[::step] #reduce the amount of points (only each 5th point)
             return path
         
         path = np.array(path)
         path = path[::-1]  # Invert the path
-        step = 12 #reduce the amount of points (only each 12th point)
+        step = 1 #reduce the amount of points (only each 12th point)
         path = path[::step]  # Select every step-th element
-        print("PATH Length: ", len(path))
+        #print("PATH Length: ", len(path))
         return path
     
     def calculate_curvature_ahead(path, look_ahead):
