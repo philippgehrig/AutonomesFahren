@@ -4,7 +4,6 @@ import numpy as np
 
 class PIDController:
     def __init__(self, Kp: float, Ki: float, Kd: float):
-        self.debug = 0
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
@@ -28,8 +27,12 @@ class LongitudinalControl:
         max_angle = 0.392699082
         steer_angle = max(min(abs(steer_angle), max_angle), 0) if steer_angle >= 0.01 else 0
 
-        acceleration = self.acceleration_controller.control(target_speed, current_speed)
-        braking = self.braking_controller.control(target_speed, current_speed)
+        if target_speed >= current_speed:
+            acceleration = self.acceleration_controller.control(target_speed, current_speed)
+            braking = 0
+        else:
+            acceleration = 0
+            braking = self.braking_controller.control(target_speed, current_speed)
 
         # Not necessary for braking because the car will break in front of the curve
         if steer_angle <= max_angle:
@@ -37,11 +40,10 @@ class LongitudinalControl:
         else:
             acceleration *= 0.75
 
-        acceleration = np.clip(acceleration, 0, 1)
+        return min(acceleration, 1), -min(braking, 1)
 
-        return acceleration, -braking
 
-    def predict_target_speed(self, curvature):
+    def predict_target_speed(self, curvature, current_speed=None, steering_angle=None):
         max_speed = 80
         min_speed = 35
         max_curvature = 20

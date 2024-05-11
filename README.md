@@ -2,10 +2,10 @@
 
 This repository containts the final project for our course: T3INF4901 Autonomes Fahren TINF22
 
-## Contriburors
+## Contributors
 
 student number (Philipp Gehrig): 5622763  
-student number (Jona Bergmann):
+student number (Jona Bergmann): 2950692
 
 Team for the final project:
 
@@ -16,6 +16,124 @@ Team for the final project:
 
 ### Lane Detection
 
+IMPORT PARAMETER:
+
+- state_image: Colour image of the vehicle's surroundings
+
+USED LIBRARIES:
+
+- NUMPY
+- SCIPY
+
+OUTPUT PARAMETER:
+
+- left: 2-dimensional Array with the left border
+- right: 2-dimensional Array with the right border
+
+The file contains the current code and older code versions to explain the advantages of the current one. The common feature of all versions is the initial transformation of the image into greyscale and the relu() after the convolution.
+
+```python
+def toGrayScale(self):
+        coefficients = np.array([0.2126, 0.7152, 0.0722])
+        gray_values = np.dot(self.img, coefficients)
+        self.img = gray_values.astype(np.uint8)
+        self.isGrayScale = True
+
+def relu(self):
+        threshold = 105
+        self.img = np.where(self.img < threshold, 0, 255)       
+```
+The convolution was initially carried out using a Laplace kernel, which produced white lines at the edges of the lanes, some of which were undercut and only one pixel thick. For more precise edge detection, separate kernels were used for horizontal and vertical detection. In addition, the image is additionally smoothed before convolution.
+
+```python
+# Horizontal sobel kernel
+kernel_horizontal = np.array([[-1, -1, -1],
+                            [0, 0, 0],
+                            [1, 1, 1]])
+
+# Vertical sobel kernel
+kernel_vertical = np.array([[-1, 0, 1],
+                            [-1, 0, 1],
+                            [-1, 0, 1]])
+
+# Convolution with sobel of smoothed image
+smoothed_image = scipy.ndimage.gaussian_filter(self.img, sigma=1)
+edges_horizontal = scipy.signal.convolve2d(smoothed_image, kernel_horizontal, mode='same', boundary='symm')
+edges_vertical = scipy.signal.convolve2d(smoothed_image, kernel_vertical, mode='same', boundary='symm')
+
+# Kantenstärke berechnen
+edge_strength = np.sqrt(np.square(edges_horizontal) + np.square(edges_vertical))      
+```
+
+The biggest difference between the code versions lies in the assignment of the recognised pixels to the lanes. The original idea was to use the average of the coordinates to determine whether the current image represents a left or right curve:
+
+```python
+def detect_curve(self):
+    centroid = np.mean(np.where(self.img == 255)[1])
+    middle_index = self.img.shape[1] // 2
+    diff = centroid - middle_index
+
+    # diff < 0: left curve; diff > 0 right curve
+    return diff      
+```
+
+Based on the calculated route, it should be possible to judge which side of the road a pixel should belong to. The pixels were assigned line by line using a for loop.
+Particularly with sharp curves, it was only possible to assign the pixels to the lanes using nested if-conditions and sometimes only by calculating the Euclidean distance. If the distance is large, it must be a new lane, if it is small, it must be the same lane. However, a lane can occur several times per image line, which often leads to errors in the lane assignment.
+
+The current solution does without the loops and the if conditions. Instead, scipy is used to perform vector-based area recognition, which recognises the related white pixels as objects within the image.
+
+```python
+lane_1 = []
+lane_2 =[]
+rest = []
+
+values, num_areas = ndimage.label(self.img)
+area_lists = [[] for _ in range(num_areas)]
+for i in range(1, num_areas + 1):
+    area_coordinates = np.where(values == i)
+    area_lists[i - 1].extend([(x, y) for x, y in zip(area_coordinates[1], area_coordinates[0])])     
+```
+
+The recognised areas have a certain number of pixels. The number of pixels is used to recognise whether it is a lane, the vehicle or noise. The two lanes are detected by sorting the objects in descending order.
+
+```python
+sizes = list(map(len, area_lists))
+area_lists_sorted = [x for _, x in sorted(zip(sizes, area_lists), key=lambda pair: pair[0], reverse=True)]
+
+if len(area_lists_sorted) == 2:
+    lane_1 = area_lists_sorted[0]
+    lane_2 = area_lists_sorted[1]
+elif len(area_lists_sorted) > 2:
+    lane_1 = area_lists_sorted[0]
+    lane_2 = area_lists_sorted[1]
+    rest = area_lists_sorted[2]    
+```
+
+Once the two lane boundaries have been recognised, the system determines which boundary is the right-hand boundary and which is the left-hand boundary.
+The fact that the average of the x-values of the right-hand lane must be greater than that of the left-hand lane is used for this purpose:
+
+```python
+if len(lane_1) > 0:
+    lane_1_score = sum(point[0] for point in lane_1) / len(lane_1)
+else:
+    lane_1_score = 0
+
+if len(lane_2) > 0:
+    lane_2_score = sum(point[0] for point in lane_2) / len(lane_2)
+else:
+    lane_2_score = 0
+
+if lane_1_score and lane_2_score:
+    left_lane = lane_1 if lane_1_score < lane_2_score else lane_2
+    right_lane = lane_1 if lane_1_score >= lane_2_score else lane_2   
+```
+
+This type of lane detection is significantly less error-prone than the old code versions, and the vector programming method is also less complex. Finally, the lists containing the coordinates of the lanes in the format (x, y) are formatted in a numpy array.
+
+```python
+return np.array(left), np.array(right)   
+```
+
 ### Path Planning
 
 IMPORT PARAMETER:
@@ -24,7 +142,7 @@ IMPORT PARAMETER:
 - right: 2-dimensional Array with the right border
 - distance_threshold: maximum distance between middle points for validation of points
 
-USED LIBARYS:
+USED LIBARIES:
 
 - NUMPY
 - SCIPY
@@ -121,6 +239,72 @@ return valid_points
 ```
 
 ### Longintudal Control
+
+INPUT PARAMETER:
+
+- curvature
+- current_speed
+- steering_angle
+
+USED LIBRARIES:
+
+- NUMPY
+
+OUTPUT PARAMETER:
+
+- acceleration
+- braking
+
+A PID controller is used for longitudinal control:
+
+```python
+class PIDController:
+    def __init__(self, Kp: float, Ki: float, Kd: float):
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
+        self.integral = 0.0
+        self.prev_error = 0.0
+
+    def control(self, target, current):
+        error = target - current
+        self.integral += error
+        derivative = error - self.prev_error
+        self.prev_error = error
+        return self.Kp * error + self.Ki * self.integral + self.Kd * derivative
+```
+
+Firstly, the curvature of the lane is used to calculate the target speed of the vehicle. If the curvature is minimal, the speed should be maximum and vice versa. If the value of the curvature is between the minimum and maximum, the speed value should be interpolated linearly:
+
+```python
+max_speed = 80
+min_speed = 35
+max_curvature = 20
+
+curvature = min(curvature, max_curvature)
+target_speed = max_speed - ((max_speed - min_speed) / max_curvature) * curvature
+```
+
+The control is performed via the difference between the calculated target speed and the actual speed to calculate the acceleration. This is reduced again if there is a significant steering angle:
+
+```python
+max_angle = 0.392699082
+steer_angle = max(min(abs(steer_angle), max_angle), 0) if steer_angle >= 0.01 else 0
+# Not necessary for braking because the car will break in front of the curve
+if steer_angle <= max_angle:
+    acceleration -= acceleration / (64 * max_angle) * steer_angle
+else:
+    acceleration *= 0.75
+```
+
+The parameterisation of the values - e.g. the maximum steering angle - was based on the values determined from the test runs of the other modules. The parameters for the PID controller were also determined experimentally. Calculating the values according to Ziegler-Nichols did not work because no dynamic oscillation of the current velocity could be set.
+
+```python
+self.acceleration_controller = PIDController(0.035, 0.00001, 0.00015)
+self.braking_controller = PIDController(0.008, 0.00001, 0.002)
+```
+
+The brake controller responds less aggressively to avoid unnecessary heavy braking.
 
 ### Lateral Control
 

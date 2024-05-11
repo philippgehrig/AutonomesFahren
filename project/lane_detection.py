@@ -9,8 +9,6 @@ class LaneDetection:
 
     def __init__(self):
         self.debug_image = None
-        self.stepc = 0
-        self.debug = 0
 
     def detect(self, state_image):
         self.img = np.array(state_image)[0:80, :]
@@ -21,7 +19,14 @@ class LaneDetection:
         left, right = self.detect_lane_boundaries(lane_1, lane_2)
         self.debug_image = state_image
 
-        if(self.debug):
+        # for debugging only
+
+        debug_flag = 2
+        if debug_flag == 1:     # test image for lane detection
+            self.img = np.stack((self.img,) * 3, axis=-1)
+            test_image = np.concatenate((self.img, first_image), axis=1)
+            self.debug_image = test_image
+        elif debug_flag == 2:   # test image for boundry detection
             first_image = np.array(state_image)[0:80, :]
             for point in lane_1:
                 first_image[point[1], point[0]] = [255, 0, 0]
@@ -35,18 +40,13 @@ class LaneDetection:
                 second_image[point[1], point[0]] = [255, 0, 0]
             for point in right:
                 second_image[point[1], point[0]] = [0, 0, 255]
+        
+            test_image = np.concatenate((first_image, second_image), axis=1)
+            self.debug_image = test_image
+        else:
+            self.debug_image = state_image
 
-            
-            self.img = np.stack((self.img,) * 3, axis=-1)
-            lane_detection_test_image = np.concatenate((self.img, first_image), axis=1)
-            self.debug_image = lane_detection_test_image
-            detect_boundries_test_image = np.concatenate((first_image, second_image), axis=1)
-            self.debug_image = detect_boundries_test_image
-
-        left = np.array(left)
-        right = np.array(right)
-
-        return left, right
+        return np.array(left), np.array(right)
     
     def toGrayScale(self):
         coefficients = np.array([0.2126, 0.7152, 0.0722])
@@ -55,17 +55,19 @@ class LaneDetection:
         self.isGrayScale = True
 
     def edge_detection(self):
-        # Sobel-Operator für die horizontale Kantenerkennung
+        if not self.isGrayScale:
+            raise AttributeError("Image is not in Grayscale, please convert using .toGrayScale()")
+        # Horizontal sobel kernel
         kernel_horizontal = np.array([[-1, -1, -1],
                                     [0, 0, 0],
                                     [1, 1, 1]])
 
-        # Sobel-Operator für die vertikale Kantenerkennung
+        # Vertical sobel kernel
         kernel_vertical = np.array([[-1, 0, 1],
                                   [-1, 0, 1],
                                   [-1, 0, 1]])
 
-        # Führe die Faltung mit den Sobel-Operatoren durch
+        # Convolution with sobel of smoothed image
         smoothed_image = scipy.ndimage.gaussian_filter(self.img, sigma=1)
         edges_horizontal = scipy.signal.convolve2d(smoothed_image, kernel_horizontal, mode='same', boundary='symm')
         edges_vertical = scipy.signal.convolve2d(smoothed_image, kernel_vertical, mode='same', boundary='symm')
@@ -93,8 +95,6 @@ class LaneDetection:
         sizes = list(map(len, area_lists))
         area_lists_sorted = [x for _, x in sorted(zip(sizes, area_lists), key=lambda pair: pair[0], reverse=True)]
 
-        # Aktuell werden restliche Areas ignoriert, sie können jedoch Teile von den Lanes beonhalten
-        # Diese Teile können sowohl positive als auch negative Auswirkung haben
         if len(area_lists_sorted) == 2:
             lane_1 = area_lists_sorted[0]
             lane_2 = area_lists_sorted[1]
@@ -105,6 +105,7 @@ class LaneDetection:
         return lane_1, lane_2, rest
     
     def detect_lane_boundaries(self, lane_1, lane_2):
+        # Avoid dividing through zero
         if len(lane_1) > 0:
             lane_1_score = sum(point[0] for point in lane_1) / len(lane_1)
         else:
@@ -119,10 +120,10 @@ class LaneDetection:
             left_lane = lane_1 if lane_1_score < lane_2_score else lane_2
             right_lane = lane_1 if lane_1_score >= lane_2_score else lane_2
         else:
-            if(self.debug):
-                print('Error: Value of lanes are 0 or None!')
-            # Standardwerte während das state_image reinzoomt
-            return [], []
+            print('Error: Value of lanes are 0 or None!')
+            left_lane = []
+            right_lane = []
+
         return left_lane, right_lane
 
 
