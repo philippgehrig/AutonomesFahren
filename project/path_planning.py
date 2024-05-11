@@ -102,12 +102,26 @@ class PathPlanning:
 
         """
         # Calculate curvature of the path
-        dx = np.gradient(path[:, 0])
-        dy = np.gradient(path[:, 1])
+        if np.count_nonzero(~np.isnan(path[:, 0])) >= 2:
+            dx = np.gradient(path[:, 0])
+        else:
+            return 0
+        if np.count_nonzero(~np.isnan(path[:, 1])) >= 2:
+            dy = np.gradient(path[:, 1])
+        else:
+            return 0
 
-        ddx = np.gradient(dx)
-        ddy = np.gradient(dy)
+        if np.count_nonzero(~np.isnan(dx)) >= 2:
+            ddx = np.gradient(dx)
+        else:
+            return 0
 
+        if np.count_nonzero(~np.isnan(dy)) >= 2:
+            ddy = np.gradient(dy)
+        else:
+            return 0
+        
+        
         curvature = np.sum(np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5)
         return curvature
     

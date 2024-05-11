@@ -11,7 +11,6 @@ from path_planning import PathPlanning
 class Car:
 
     def __init__(self):
-        print(self)
         self._lane_detection = LaneDetection()
         self._path_planning = PathPlanning()
         self._lateral_control = LateralControl()
