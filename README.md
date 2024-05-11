@@ -97,7 +97,7 @@ for i in range(1, num_areas + 1):
 The recognised areas have a certain number of pixels. The number of pixels is used to recognise whether it is a lane, the vehicle or noise. The two lanes are detected by sorting the objects in descending order.
 
 ```python
- values, num_areas = ndimage.label(self.img)
+values, num_areas = ndimage.label(self.img)
 area_lists = [[] for _ in range(num_areas)]
 for i in range(1, num_areas + 1):
     area_coordinates = np.where(values == i)
