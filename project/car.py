@@ -37,9 +37,3 @@ class Car:
         acceleration, braking = self._longitudinal_control.control(info['speed'], target_speed, steering_angle)
 
         action = [steering_angle, acceleration, braking]
-
-        self.step += 1
-        if(self.step < 100):
-            return [0, 0, 0]
-        else:
-            return action

@@ -41,7 +41,7 @@ def run(env, input_controller: InputController):
         for point in trajectory:
             if 0 < point[0] < 96 and 0 < point[1] < 84:
                 cv_image[int(point[1]), int(point[0])] = [255, 255, 255]
-        # add a blue dot on closest lookahead point
+        #add a blue dot on closest lookahead point
         #cv_image[int(lateral_control.clp[1]), int(lateral_control.clp[0])] = [0, 0, 255] 
         #cv_image[int(lateral_control.sclp[1]), int(lateral_control.sclp[0])] = [255, 0, 0] 
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
@@ -59,10 +59,8 @@ def run(env, input_controller: InputController):
             print("Beschleunigung; ",acceleration)
             print("Bremsen; ",braking)
             print("Steering; ",steering_angle)
-            a = [steering_angle, acceleration, braking]
+        a = [steering_angle, acceleration, braking]
 
-        if stepcounter > 100:
-            a = [0, 0, 1]
         state_image, r, done, trunc, info = env.step(a)
         total_reward += r
 

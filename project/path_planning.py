@@ -5,7 +5,7 @@ from scipy.interpolate import CubicSpline
 import heapq
 class PathPlanning:
     def __init__(self):
-        self.debug = 0
+        self.debug = 1
         pass
 
 
@@ -21,6 +21,7 @@ class PathPlanning:
             path = cls.calculate_path(left_boundary, right_boundary)
             valid_path = cls.validate(path, distance_threshold)
             curvature = cls.calculate_curvature(valid_path)
+            valid_path = cls.invert_path(valid_path)
             return valid_path, curvature
     
         # TARGET LINE PATH PLANNING: path based towards reducing the curvature
@@ -134,6 +135,19 @@ class PathPlanning:
         
         curvature = np.sum(np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5)
         return curvature
+    
+    def invert_path(path):
+        # I want to invert the path and reduce the amount of points to 12
+
+        if len(path) == 0:
+            return []
+        
+        path = np.array(path)
+        path = path[::-1]  # Invert the path
+        step = 12
+        path = path[::step]  # Select every step-th element
+        print("PATH Length: ", len(path))
+        return path
     
     def calculate_curvature_ahead(path, look_ahead):
         # Initialize an empty list to store the curvature ahead for each point
