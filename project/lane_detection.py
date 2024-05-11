@@ -4,6 +4,7 @@ import scipy
 from scipy import ndimage
 import matplotlib.pyplot as plt
 from PIL import Image, ImageOps
+from scipy.interpolate import interp1d
 
 class LaneDetection:
 
@@ -15,8 +16,10 @@ class LaneDetection:
         self.toGrayScale()
         self.img = self.edge_detection()
         self.relu()
-        lane_1, lane_2, rest = self.area_detection()
-        left, right = self.detect_lane_boundaries(lane_1, lane_2)
+        lanes = self.area_detection()
+        left, right = self.detect_lane_boundaries(lanes)
+        # left = self.merge_points(left)
+        # right = self.merge_points(right)
         self.debug_image = state_image
 
         # for debugging only
@@ -28,12 +31,20 @@ class LaneDetection:
             self.debug_image = test_image
         elif debug_flag == 2:   # test image for boundry detection
             first_image = np.array(state_image)[0:80, :]
-            for point in lane_1:
-                first_image[point[1], point[0]] = [255, 0, 0]
-            for point in lane_2:
-                first_image[point[1], point[0]] = [0, 0, 255]
-            for point in rest:
-                first_image[point[1], point[0]] = [0, 255, 0]
+            i = 0
+            for lane in lanes:
+                for point in lane:
+                    if i == 0:
+                        first_image[point[1], point[0]] = [255, 0, 0]
+                    elif i == 1:
+                        first_image[point[1], point[0]] = [0, 0, 255]
+                    elif i == 2:
+                        first_image[point[1], point[0]] = [0, 255, 0]
+                    elif i == 3:
+                        first_image[point[1], point[0]] = [255, 255, 0]
+                    else:
+                        first_image[point[1], point[0]] = [0, 255, 255]
+                i += 1
 
             second_image = np.array(state_image)[0:80, :]
             for point in left:
@@ -57,6 +68,7 @@ class LaneDetection:
     def edge_detection(self):
         if not self.isGrayScale:
             raise AttributeError("Image is not in Grayscale, please convert using .toGrayScale()")
+        
         # Horizontal sobel kernel
         kernel_horizontal = np.array([[-1, -1, -1],
                                     [0, 0, 0],
@@ -67,14 +79,13 @@ class LaneDetection:
                                   [-1, 0, 1],
                                   [-1, 0, 1]])
 
-        # Convolution with sobel of smoothed image
-        smoothed_image = scipy.ndimage.gaussian_filter(self.img, sigma=1)
-        edges_horizontal = scipy.signal.convolve2d(smoothed_image, kernel_horizontal, mode='same', boundary='symm')
-        edges_vertical = scipy.signal.convolve2d(smoothed_image, kernel_vertical, mode='same', boundary='symm')
-
+        # Convolution with sobel of the image
+        
+        edges_horizontal = scipy.signal.convolve2d(self.img, kernel_horizontal, mode='same', boundary='symm')
+        edges_vertical = scipy.signal.convolve2d(self.img, kernel_vertical, mode='same', boundary='symm')
+        
         # Kantenstärke berechnen
         edge_strength = np.sqrt(np.square(edges_horizontal) + np.square(edges_vertical))
-
         return edge_strength
     
     def relu(self):
@@ -82,9 +93,6 @@ class LaneDetection:
         self.img = np.where(self.img < threshold, 0, 255)
     
     def area_detection(self):
-        lane_1 = []
-        lane_2 =[]
-        rest = []
 
         values, num_areas = ndimage.label(self.img)
         area_lists = [[] for _ in range(num_areas)]
@@ -95,36 +103,66 @@ class LaneDetection:
         sizes = list(map(len, area_lists))
         area_lists_sorted = [x for _, x in sorted(zip(sizes, area_lists), key=lambda pair: pair[0], reverse=True)]
 
-        if len(area_lists_sorted) == 2:
-            lane_1 = area_lists_sorted[0]
-            lane_2 = area_lists_sorted[1]
-        elif len(area_lists_sorted) > 2:
-            lane_1 = area_lists_sorted[0]
-            lane_2 = area_lists_sorted[1]
-            rest = area_lists_sorted[2]
-        return lane_1, lane_2, rest
+        return area_lists_sorted
     
-    def detect_lane_boundaries(self, lane_1, lane_2):
-        # Avoid dividing through zero
-        if len(lane_1) > 0:
-            lane_1_score = sum(point[0] for point in lane_1) / len(lane_1)
-        else:
-            lane_1_score = 0
+    def detect_lane_boundaries(self, lanes):
+        score_lists = [[] for _ in range(len(lanes))]
+        num_lanes = 0
+        for i in range(0, len(lanes)):
+        # Avoid dividing through zero, also the car is estimated to less than 75 pixels
+            if len(lanes[i]) > 75:
+                score_lists[i] = sum(point[0] for point in lanes[i]) / len(lanes[i])
+                num_lanes += 1
+            else:
+                score_lists[i] = 0
+        
+        # The higher the score, the more right is the lane
+        sorted_lanes = [x for _, x in sorted(zip(score_lists, lanes), reverse=True)]
 
-        if len(lane_2) > 0:
-            lane_2_score = sum(point[0] for point in lane_2) / len(lane_2)
-        else:
-            lane_2_score = 0
-
-        if lane_1_score and lane_2_score:
-            left_lane = lane_1 if lane_1_score < lane_2_score else lane_2
-            right_lane = lane_1 if lane_1_score >= lane_2_score else lane_2
-        else:
+        if num_lanes == 0:
             print('Error: Value of lanes are 0 or None!')
-            left_lane = []
-            right_lane = []
+            return [], []
+        elif num_lanes == 2:
+            return sorted_lanes[1], sorted_lanes[0]
+        elif num_lanes == 3:
+            left_lane = sorted_lanes[1] + sorted_lanes[2]
+            right_lane = sorted_lanes[0]
+            return left_lane, right_lane
+        elif num_lanes == 4:
+            left_lane = sorted_lanes[1] + sorted_lanes[2]
+            right_lane = sorted_lanes[0] + sorted_lanes[3]
+            return left_lane, right_lane
+        else:
+            return [], []
+    
+    def merge_points(self, lane):
+        # for right lane: smallest x-value per y-value
+        # for left lane: highest x-value per y-value
+        new_lane = []
 
-        return left_lane, right_lane
+        y_value = None
+        x_value = None
+        
+        if len(lane) > 0:
+            x_value = lane[0][0]
+            y_value = lane[0][1]
+            new_lane.append((x_value, y_value))
+            for x, y in lane[1:]:
+                diff = x - x_value
+
+                if y == y_value and diff > 15:
+                    new_lane.append((x, y))
+                elif y != y_value:
+                    x_value = x
+                    y_value = y
+                    new_lane.append((x_value, y_value))
+                else:
+                    pass
+        else:
+            print('No lane found')
+
+        return new_lane
+
 
 
 # Old code versions:
