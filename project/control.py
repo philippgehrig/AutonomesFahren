@@ -52,15 +52,12 @@ def run(env, input_controller: InputController):
         # Step the environment
         input_controller.update()
         stepcounter += 1
-        if(stepcounter < 20):
-            a = [0, 0, 0]
-        elif(stepcounter < 100):
-            print("--------- Step: ",stepcounter," ---------")
-            print("Beschleunigung; ",acceleration)
-            print("Bremsen; ",braking)
-            print("Steering; ",steering_angle)
+        
         a = [steering_angle, acceleration, braking]
 
+        if(stepcounter < 20):
+            a = [0, 0, 0]
+            
         state_image, r, done, trunc, info = env.step(a)
         total_reward += r
 
@@ -70,7 +67,7 @@ def run(env, input_controller: InputController):
             print(f"seed: {seed:06d}     reward: {total_reward:06.2F}")
 
             input_controller.skip = False
-            seed = 619794
+            seed = int(np.random.randint(0, int(1e6))) 
             print(seed)
             state_image, info = env.reset(seed=seed)
             total_reward = 0.0

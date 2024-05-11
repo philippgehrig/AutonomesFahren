@@ -5,7 +5,7 @@ from scipy.interpolate import CubicSpline
 import heapq
 class PathPlanning:
     def __init__(self):
-        self.debug = 1
+        self.debug = 0
         pass
 
 
@@ -20,9 +20,10 @@ class PathPlanning:
         if planing_algorithm == 1: 
             path = cls.calculate_path(left_boundary, right_boundary)
             valid_path = cls.validate(path, distance_threshold)
-            curvature = cls.calculate_curvature(valid_path)
-            valid_path = cls.invert_path(valid_path)
-            return valid_path, curvature
+            curvature_sum = cls.calculate_curvature(valid_path, True)
+            curvature = cls.calculate_curvature(valid_path, False)
+            inverted_path = cls.invert_path(valid_path, curvature)
+            return inverted_path, curvature_sum
     
         # TARGET LINE PATH PLANNING: path based towards reducing the curvature
         elif planing_algorithm == 2:
@@ -97,7 +98,7 @@ class PathPlanning:
         valid_points = middle[np.append(mask, True)]
         return valid_points
 
-    def calculate_curvature(path):
+    def calculate_curvature(path, flag):
         """
         Calculate the curvature of a given path.
 
@@ -132,19 +133,41 @@ class PathPlanning:
         else:
             return 0
         
+        if(flag):
+            curvature = np.sum(np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5)
+            return curvature
+        else:
+            curvature = np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5
+            return curvature
         
-        curvature = np.sum(np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5)
-        return curvature
     
-    def invert_path(path):
+    def invert_path(path, curvature):
         # I want to invert the path and reduce the amount of points to 12
 
         if len(path) == 0:
             return []
+        print("Curvature [",type(curvature), "]:",  curvature)
+        
+        if np.isscalar(curvature):
+            curvature = [curvature]
+
+        # Splice the first 10 points of the array:
+        if len(curvature) < 10:
+            next_points = curvature
+        else:
+            next_points = curvature[:10]
+        
+        #if curvature is larger than 40 within the next 10 points, decrease step size
+        if any(point > 40 for point in next_points):
+            path = np.array(path)
+            path = path[::-1]  # Invert the path
+            step = 5
+            path = path[::step] #reduce the amount of points (only each 5th point)
+            return path
         
         path = np.array(path)
         path = path[::-1]  # Invert the path
-        step = 12
+        step = 12 #reduce the amount of points (only each 12th point)
         path = path[::step]  # Select every step-th element
         print("PATH Length: ", len(path))
         return path
@@ -165,7 +188,7 @@ class PathPlanning:
             ddx = np.gradient(dx)
             ddy = np.gradient(dy)
 
-            curvature_ahead = np.sum(np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5)
+            curvature_ahead = np.abs(np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5)
 
             # Append the curvature ahead to the list
             curvatures_ahead.append(curvature_ahead)
@@ -177,10 +200,6 @@ class PathPlanning:
         curvatures_ahead = np.array(curvatures_ahead)
 
         return curvatures_ahead
-            
-
-    # Introduced BIAS Variable which can move the target line inside and outside
-    # bias = 0 => left boundry; bias = 1 => right boundry
 
     def calculate_target_line(left_boundary, right_boundary):
         

@@ -13,7 +13,7 @@ class LateralControl:
         self.step = 0  # add a step counter
         self.clp = [0,0]  # closest lookahead point
         self.sclp = [0,0]  # second closest lookahead point
-        self.debug = 1 # debug flag
+        self.debug = 0 # debug flag
 
     def control(self, trajectory, speed):
         """
