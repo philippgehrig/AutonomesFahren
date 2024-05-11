@@ -29,8 +29,8 @@ def run(env, input_controller: InputController):
     print("SEED: ",seed)
 
     while not input_controller.quit:
-        left_lane_boundaries, right_lane_boundaries = lane_detection.detect(state_image)
-        trajectory, curvature = path_planning.plan(left_lane_boundaries, right_lane_boundaries)
+        left_lane_boundary, right_lane_boundary = lane_detection.detect(state_image)
+        trajectory, curvature = path_planning.plan(left_lane_boundary, right_lane_boundary)
         # trajectory, curvature = path_planning.plan(left_lane_boundaries, right_lane_boundaries)
         steering_angle = lateral_control.control(trajectory, info['speed'])
         # target_speed = longitudinal_control.predict_target_speed(info['trajectory'], info['speed'], steering_angle)
