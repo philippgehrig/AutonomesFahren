@@ -22,9 +22,10 @@ def run(env, input_controller: InputController):
 
     # Schwierige Seeds: 2(U-Turn), 3(Error), 5(Error), 6(Kurve), 7(Error), 8(Kurve)
 
-    seed = int(np.random.randint(0, int(1e6)))
+    seed = 619794
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
+    print(seed)
 
     while not input_controller.quit:
         left_lane_boundaries, right_lane_boundaries = lane_detection.detect(state_image)
@@ -59,9 +60,11 @@ def run(env, input_controller: InputController):
             print(f"seed: {seed:06d}     reward: {total_reward:06.2F}")
 
             input_controller.skip = False
-            seed = int(np.random.randint(0, int(1e6)))
+            seed = 619794
+            print(seed)
             state_image, info = env.reset(seed=seed)
             total_reward = 0.0
+        print("Beschleunigung; ",acceleration)
 
 
 def main():

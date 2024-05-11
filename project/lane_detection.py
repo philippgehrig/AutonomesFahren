@@ -133,7 +133,6 @@ class LaneDetection:
 
 # # Fahrbahnbreite: gerade Straße: Pixel 38 und 57
 
-
 # convolution_factor = 1.5
 
 # convolutionMatrix = np.array([
@@ -265,6 +264,7 @@ class LaneDetection:
 #         else:
 #             print('No white pixel found!')
 #             return [], []
+
         
 #     # Old function for lane detection
         

@@ -15,11 +15,25 @@ class LateralControl:
         self.sclp = [0,0]  # second closest lookahead point
 
     def control(self, trajectory, speed):
+        """
+        Controls the lateral movement of the car based on the given trajectory and speed.
+
+        Args:
+            trajectory (numpy.ndarray): The trajectory of the car.
+            speed (float): The current speed of the car.
+
+        Returns:
+            float: The calculated steering angle.
+
+        Raises:
+            None
+
+        """
 
         # Check if the trajectory is empty
         if len(trajectory) == 0:
             print("Trajectory = 0") # debug message
-            return 0
+            return 0 # car should not steer if no trajectory is found
         
         # Calculate the cross-track error
         # sharpe_turn_flag = 1 => sharp left; 2 => sharp right; 0 => normal
@@ -27,7 +41,7 @@ class LateralControl:
         # Check if the lookahead index is valid
         if(len(trajectory) < lookahead_index + 2):
             print("Trajectory index out of bounds") #debug message
-            return 0
+            return 0 # car should not steer if trajectory index is out of bounds
         
         if(sharp_turn_flag == 1):
             # SHARP LEFT TURN => steer right with 0.3 until normal CLP can be calculated again
@@ -50,12 +64,23 @@ class LateralControl:
         return delta
     
     def _calculate_cte(self, trajectory):
+        """
+        Calculates the cross-track error (cte) and the index of the lookahead point.
+
+        Parameters:
+        trajectory (numpy.ndarray): The trajectory points.
+
+        Returns:
+        cte (float): The cross-track error.
+        lookahead_index (int): The index of the lookahead point in the trajectory.
+        """
         # Calculate the distance to each point on the trajectory
         distances = np.linalg.norm(trajectory - self._car_position, axis=1)
 
         # Find the index of the lookahead point
         lookahead_distance = 0.0  # adjust this value as needed
-        lookahead_index = np.argmin(np.abs(distances + lookahead_distance))
+        lookahead_index = np.argmin(np.abs(distances - lookahead_distance))
+
 
         self.clp = trajectory[lookahead_index]
         
