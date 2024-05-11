@@ -42,6 +42,7 @@ class LongitudinalControl:
 
         return min(acceleration, 1), -min(braking, 1)
 
+
     def predict_target_speed(self, curvature, current_speed=None, steering_angle=None):
         max_speed = 80
         min_speed = 35

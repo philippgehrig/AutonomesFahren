@@ -15,6 +15,7 @@ class Car:
         self._path_planning = PathPlanning()
         self._lateral_control = LateralControl()
         self._longitudinal_control = LongitudinalControl()
+        self.step = 0
 
     def next_action(self, observation: np.ndarray, info: dict[str, any]) -> list:
         """Defines the next action to take based on the current observation, reward, and other information.

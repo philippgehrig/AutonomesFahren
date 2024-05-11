@@ -13,6 +13,7 @@ class LateralControl:
         self.step = 0  # add a step counter
         self.clp = [0,0]  # closest lookahead point
         self.sclp = [0,0]  # second closest lookahead point
+        self.debug = 0 # debug flag
 
     def control(self, trajectory, speed):
         """
@@ -29,10 +30,9 @@ class LateralControl:
             None
 
         """
-
         # Check if the trajectory is empty
         if len(trajectory) == 0:
-            print("Trajectory = 0") # debug message
+            if(self.debug): print("Trajectory = 0") # debug message
             return 0 # car should not steer if no trajectory is found
         
         # Calculate the cross-track error
@@ -40,15 +40,17 @@ class LateralControl:
         cte, lookahead_index, sharp_turn_flag = self._calculate_cte(trajectory)
         # Check if the lookahead index is valid
         if(len(trajectory) < lookahead_index + 2):
-            print("Trajectory index out of bounds") #debug message
+            if(self.debug): print("Trajectory index out of bounds") #debug message
             return 0 # car should not steer if trajectory index is out of bounds
         
         if(sharp_turn_flag == 1):
             # SHARP LEFT TURN => steer right with 0.3 until normal CLP can be calculated again
+            if(self.debug): print("SHARP LEFT")
             return 0.3
         
         elif(sharp_turn_flag == 2):
             # SHARP RIGHT TURN => steer left with -0.3 until normal CLP can be calculated again
+            if(self.debug): print("SHARP RIGHT")
             return -0.3    
         
         else:
@@ -61,6 +63,7 @@ class LateralControl:
         delta = np.clip(delta, -self.delta_max, self.delta_max)
 
         self.step += 1  # increment the  dstep counter
+        if(self.debug): print("DELTA: ", delta)
         return delta
     
     def _calculate_cte(self, trajectory):
@@ -86,7 +89,7 @@ class LateralControl:
         
         # Check if the lookahead index is valid
         if lookahead_index + 1 >= len(trajectory):
-            print("Lookahead index out of bounds") #debug message
+            if(self.debug): print("Lookahead index out of bounds") #debug message
             self.sclp = None
         else:
             self.sclp = trajectory[lookahead_index + 1]
@@ -101,7 +104,6 @@ class LateralControl:
         if(self.clp[1] < self._car_position[1] -4 or self.clp[0] < self._car_position[0]-4):
             cte = distances[lookahead_index]
             return cte, lookahead_index, 2
-
 
         # Calculate the cross-track error as the distance to the lookahead point
         cte = distances[lookahead_index]

@@ -121,9 +121,9 @@ class LaneDetection:
             right_lane = lane_1 if lane_1_score >= lane_2_score else lane_2
         else:
             print('Error: Value of lanes are 0 or None!')
-            # Standard values while state_image is zooming in
-            left_lane = [(38, 70), (38, 71)]
-            right_lane = [(57, 70), (57, 71)]
+            left_lane = []
+            right_lane = []
+
         return left_lane, right_lane
 
 
