@@ -35,7 +35,7 @@ def run(env, input_controller: InputController):
         print("lateral control")
         steering_angle = lateral_control.control(trajectory, info['speed'])
         print("longnitudal control")
-        target_speed = longitudinal_control.predict_target_speed(trajectory, info['speed'], steering_angle)
+        target_speed = longitudinal_control.predict_target_speed(curvature, info['speed'], steering_angle)
         acceleration, braking = longitudinal_control.control(info['speed'], target_speed, steering_angle)
 
         speed_history.append(info['speed'])
