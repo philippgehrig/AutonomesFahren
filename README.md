@@ -40,24 +40,23 @@ def toGrayScale(self):
         self.isGrayScale = True
 
 def relu(self):
-        threshold = 105
+        threshold = 130
         self.img = np.where(self.img < threshold, 0, 255)       
 ```
 The convolution was initially carried out using a Laplace kernel, which produced white lines at the edges of the lanes, some of which were undercut and only one pixel thick. For more precise edge detection, separate kernels were used for horizontal and vertical detection. In addition, the image is additionally smoothed before convolution.
 
 ```python
-# Horizontal sobel kernel
+# Horizontal prewitt kernel
 kernel_horizontal = np.array([[-1, -1, -1],
-                            [0, 0, 0],
-                            [1, 1, 1]])
+                              [0, 0, 0],
+                              [1, 1, 1]])
 
-# Vertical sobel kernel
+# Vertical prewitt kernel
 kernel_vertical = np.array([[-1, 0, 1],
                             [-1, 0, 1],
                             [-1, 0, 1]])
 
-# Convolution with sobel of smoothed image
-smoothed_image = scipy.ndimage.gaussian_filter(self.img, sigma=1)
+# Convolution with prewitt
 edges_horizontal = scipy.signal.convolve2d(smoothed_image, kernel_horizontal, mode='same', boundary='symm')
 edges_vertical = scipy.signal.convolve2d(smoothed_image, kernel_vertical, mode='same', boundary='symm')
 
