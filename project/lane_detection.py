@@ -153,8 +153,7 @@ class LaneDetection:
                 else:
                     pass
         else:
-            if self.debug_flag: print('No lane found')
-
+            if(self.debug_flag): print('No lane found')
         return new_lane
 
 
