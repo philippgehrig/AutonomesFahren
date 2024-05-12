@@ -10,7 +10,7 @@ class LaneDetection:
 
     def __init__(self):
         self.debug_image = None
-        self.debug_flag = 1
+        self.debug_flag = 0
 
     def detect(self, state_image):
         self.img = np.array(state_image)[0:84, :]
@@ -118,7 +118,7 @@ class LaneDetection:
         sorted_lanes = [x for _, x in sorted(zip(score_lists, lanes), reverse=True)]
 
         if num_lanes == 0:
-            print('Error: Value of lanes are 0 or None!')
+            if(self.debug_flag): print('Error: Value of lanes are 0 or None!')
             return [], []
         elif num_lanes == 2:
             return sorted_lanes[1], sorted_lanes[0]
@@ -156,7 +156,7 @@ class LaneDetection:
                 else:
                     pass
         else:
-            print('No lane found')
+            if(self.debug_flag): print('No lane found')
 
         return new_lane
 
