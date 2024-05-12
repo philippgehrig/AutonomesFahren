@@ -40,24 +40,23 @@ def toGrayScale(self):
         self.isGrayScale = True
 
 def relu(self):
-        threshold = 105
+        threshold = 130
         self.img = np.where(self.img < threshold, 0, 255)       
 ```
 The convolution was initially carried out using a Laplace kernel, which produced white lines at the edges of the lanes, some of which were undercut and only one pixel thick. For more precise edge detection, separate kernels were used for horizontal and vertical detection. In addition, the image is additionally smoothed before convolution.
 
 ```python
-# Horizontal sobel kernel
+# Horizontal prewitt kernel
 kernel_horizontal = np.array([[-1, -1, -1],
-                            [0, 0, 0],
-                            [1, 1, 1]])
+                              [0, 0, 0],
+                              [1, 1, 1]])
 
-# Vertical sobel kernel
+# Vertical prewitt kernel
 kernel_vertical = np.array([[-1, 0, 1],
                             [-1, 0, 1],
                             [-1, 0, 1]])
 
-# Convolution with sobel of smoothed image
-smoothed_image = scipy.ndimage.gaussian_filter(self.img, sigma=1)
+# Convolution with prewitt
 edges_horizontal = scipy.signal.convolve2d(smoothed_image, kernel_horizontal, mode='same', boundary='symm')
 edges_vertical = scipy.signal.convolve2d(smoothed_image, kernel_vertical, mode='same', boundary='symm')
 
@@ -97,41 +96,89 @@ for i in range(1, num_areas + 1):
 The recognised areas have a certain number of pixels. The number of pixels is used to recognise whether it is a lane, the vehicle or noise. The two lanes are detected by sorting the objects in descending order.
 
 ```python
-sizes = list(map(len, area_lists))
-area_lists_sorted = [x for _, x in sorted(zip(sizes, area_lists), key=lambda pair: pair[0], reverse=True)]
+values, num_areas = ndimage.label(self.img)
+area_lists = [[] for _ in range(num_areas)]
+for i in range(1, num_areas + 1):
+    area_coordinates = np.where(values == i)
+    area_lists[i - 1].extend([(x, y) for x, y in zip(area_coordinates[1], area_coordinates[0])])
 
-if len(area_lists_sorted) == 2:
-    lane_1 = area_lists_sorted[0]
-    lane_2 = area_lists_sorted[1]
-elif len(area_lists_sorted) > 2:
-    lane_1 = area_lists_sorted[0]
-    lane_2 = area_lists_sorted[1]
-    rest = area_lists_sorted[2]    
+sizes = list(map(len, area_lists))
+area_lists_sorted = [x for _, x in sorted(zip(sizes, area_lists), key=lambda pair: pair[0], reverse=True)]    
 ```
 
-Once the two lane boundaries have been recognised, the system determines which boundary is the right-hand boundary and which is the left-hand boundary.
-The fact that the average of the x-values of the right-hand lane must be greater than that of the left-hand lane is used for this purpose:
+Once the lane boundaries have been recognised, the system determines which boundary is the right-hand boundary and which is the left-hand boundary.
+The calculated score is used to estimate the relative position of the lanes. The fact that the score of the x-values of the right-hand lanes must be greater than that of the left-hand lanes is used for this purpose:
 
 ```python
-if len(lane_1) > 0:
-    lane_1_score = sum(point[0] for point in lane_1) / len(lane_1)
-else:
-    lane_1_score = 0
+score_lists = [[] for _ in range(len(lanes))]
+num_lanes = 0
+for i in range(0, len(lanes)):
+# Avoid dividing through zero, also the car is estimated to less than 75 pixels
+    if len(lanes[i]) > 75:
+        score_lists[i] = sum(point[0] for point in lanes[i]) / len(lanes[i])
+        num_lanes += 1
+    else:
+        score_lists[i] = 0
 
-if len(lane_2) > 0:
-    lane_2_score = sum(point[0] for point in lane_2) / len(lane_2)
-else:
-    lane_2_score = 0
+# The higher the score, the more right is the lane
+sorted_lanes = [x for _, x in sorted(zip(score_lists, lanes), reverse=True)]   
+```
 
-if lane_1_score and lane_2_score:
-    left_lane = lane_1 if lane_1_score < lane_2_score else lane_2
-    right_lane = lane_1 if lane_1_score >= lane_2_score else lane_2   
+The lanes, which are available in the form of a list, are sorted according to their score. The sections of the lane boundary are assigned to the right or left lane using if conditions:
+
+```python
+if num_lanes == 0:
+    print('Error: Value of lanes are 0 or None!')
+    return [], []
+elif num_lanes == 2:
+    return sorted_lanes[1], sorted_lanes[0]
+elif num_lanes == 3:
+    left_lane = sorted_lanes[1] + sorted_lanes[2]
+    right_lane = sorted_lanes[0]
+    return left_lane, right_lane
+elif num_lanes == 4:
+    left_lane = sorted_lanes[1] + sorted_lanes[2]
+    right_lane = sorted_lanes[0] + sorted_lanes[3]
+    return left_lane, right_lane
+else:
+    return [], []  
 ```
 
 This type of lane detection is significantly less error-prone than the old code versions, and the vector programming method is also less complex. Finally, the lists containing the coordinates of the lanes in the format (x, y) are formatted in a numpy array.
 
 ```python
 return np.array(left), np.array(right)   
+```
+
+Very pixel-rich lanes are detected via the sobel kernel and the area recognition of numpy. A function that thins out the lanes was implemented in order to match the lanes with those of the environment info. However, it does not contribute to the better functioning of the overall system:
+
+```python
+def thin_out_lines(self, lane):
+    # A lane can have a maximum of 2 pixels
+    new_lane = []
+
+    y_value = None
+    x_value = None
+    
+    if len(lane) > 0:
+        x_value = lane[0][0]
+        y_value = lane[0][1]
+        new_lane.append((x_value, y_value))
+        for x, y in lane[1:]:
+            diff = x - x_value
+
+            if y == y_value and diff > 15:
+                new_lane.append((x, y))
+            elif y != y_value:
+                x_value = x
+                y_value = y
+                new_lane.append((x_value, y_value))
+            else:
+                pass
+    else:
+        print('No lane found')
+
+    return new_lane  
 ```
 
 ### Path Planning

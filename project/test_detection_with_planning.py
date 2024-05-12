@@ -16,7 +16,7 @@ def run(env, input_controller: InputController):
     lane_detection = LaneDetection()
     path_planning = PathPlanning()
 
-    seed = int(np.random.randint(0, int(1e6)))
+    seed = 544198 # int(np.random.randint(0, int(1e6)))
     state_image, info = env.reset(seed=seed)
     total_reward = 0.0
 
