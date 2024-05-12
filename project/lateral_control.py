@@ -15,7 +15,7 @@ class LateralControl:
         self.clp = [0,0]  # closest lookahead point
         self.sclp = [0,0]  # second closest lookahead point
         self.debug = 0 # debug flag
-        self.controller = 2 # 0 => Stannley; 1 => Pure Pursuit; 2 => Own Controller Creation
+        self.controller = 0 # 0 => Stannley; 1 => Pure Pursuit; 2 => Own Controller Creation
 
     def control(self, trajectory, speed):
         """
@@ -74,16 +74,16 @@ class LateralControl:
         if(sharp_turn_flag == 1):
             # SHARP LEFT TURN => steer right with 0.3 until normal CLP can be calculated again
             if(self.debug): print("SHARP LEFT")
-            return 0.3
+            return 0.2
         
         elif(sharp_turn_flag == 2):
             # SHARP RIGHT TURN => steer left with -0.3 until normal CLP can be calculated again
             if(self.debug): print("SHARP RIGHT")
-            return -0.3    
+            return -0.2    
         
         else:
             desired_heading_angle = np.arctan2(trajectory[lookahead_index + 1, 1] - trajectory[lookahead_index, 1], trajectory[lookahead_index + 1, 0] - trajectory[lookahead_index, 0])    
-            current_heading_angle = np.arctan2(self._car_position[1] - trajectory[0, 1], self._car_position[0] - trajectory[0, 0])
+            current_heading_angle = np.arctan2(self._car_position_front[1] - trajectory[0, 1], self._car_position_front[0] - trajectory[0, 0])
             he = desired_heading_angle - current_heading_angle if self.step > 10 else 0  # ignore the heading error for the first 10 frame => zoom in
         # Calculate the steering angle
         delta = np.arctan2(self.k * cte, speed + self.k_soft) + he
@@ -115,20 +115,23 @@ class LateralControl:
         # Check if the lookahead index is valid
         if lookahead_index + 1 >= len(trajectory):
             if(self.debug): print("Lookahead index out of bounds") #debug message
-            self.sclp = None
+            self.clp = [0,0] # set the closest lookahead point to the origin
         else:
+            self.clp = trajectory[lookahead_index]
             self.sclp = trajectory[lookahead_index + 1]
+            
 
+        
 
         # SHARP LEFT TRUN AHEAD
         if(self.clp[1] > self._car_position_front[1] +4 or self.clp[0] > self._car_position_front[0]+4):
             cte = distances[lookahead_index]
-            return cte, lookahead_index, 0
+            return cte, lookahead_index, 1
 
         # SHARP RIGHT TURN AHEAD
         if(self.clp[1] < self._car_position_front[1] -4 or self.clp[0] < self._car_position_front[0]-4):
             cte = distances[lookahead_index]
-            return cte, lookahead_index, 0
+            return cte, lookahead_index, 2
 
         # Calculate the cross-track error as the distance to the lookahead point
         cte = distances[lookahead_index]
@@ -201,8 +204,13 @@ class LateralControl:
             if(self.debug): print("Trajectory = 0")
             return 0
         
-        desired_ha = np.arctan2(trajectory[1], trajectory[0])
+        distances = np.linalg.norm(trajectory - self._car_position_front, axis=1)
+        closest_index = np.argmin(distances)
+        self.clp = trajectory[closest_index]
+        second_closest_index = np.argmin(np.partition(distances, 2)[:2])
+        self.sclp = trajectory[second_closest_index]
 
-        delta = np.clip(desired_ha, -self.delta_max, self.delta_max)
+        vector = self.sclp - self._car_position_front
+        delta = np.clip(np.arctan2(vector[1], vector[0]), -self.delta_max, self.delta_max)
         return delta
         
