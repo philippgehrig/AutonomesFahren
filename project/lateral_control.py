@@ -6,7 +6,8 @@ import numpy as np
 class LateralControl:
 
     def __init__(self, k=0.3, k_soft=0.8, delta_max=1):
-        self._car_position = np.array([48, 62])
+        self._car_position_front = np.array([48, 65]) #Postion Front Axle for Bycicle Model
+        self._car_position_back = np.array([48, 75]) #Postion Rear Axle for Bycicle Model 
         self.k = k  # control gain
         self.k_soft = k_soft  # softening factor
         self.delta_max = delta_max  # max steering angle
@@ -14,8 +15,35 @@ class LateralControl:
         self.clp = [0,0]  # closest lookahead point
         self.sclp = [0,0]  # second closest lookahead point
         self.debug = 0 # debug flag
+        self.controller = 2 # 0 => Stannley; 1 => Pure Pursuit; 2 => Own Controller Creation
 
     def control(self, trajectory, speed):
+        """
+        Controls the lateral movement of the car based on the given trajectory and speed.
+
+        Args:
+            trajectory (numpy.ndarray): The trajectory of the car.
+            speed (float): The current speed of the car.
+
+        Returns:
+            float: The calculated steering angle.
+
+        Raises:
+            None
+
+        """
+        if(self.controller == 0):
+            return self.control_stanley(trajectory, speed)
+        elif(self.controller == 1):
+            return self.control_pure_pursuit(trajectory, speed)
+        elif(self.controller == 2):
+            return self.own_controller(trajectory, speed)
+        else:
+            return "Invalid Controller"
+
+
+
+    def control_stanley(self, trajectory, speed):
         """
         Controls the lateral movement of the car based on the given trajectory and speed.
 
@@ -78,11 +106,8 @@ class LateralControl:
         lookahead_index (int): The index of the lookahead point in the trajectory.
         """
         # Calculate the distance to each point on the trajectory
-        distances = np.linalg.norm(trajectory - self._car_position, axis=1)
-
-        # Find the index of the lookahead point
-        lookahead_distance = 0.0  # adjust this value as needed
-        lookahead_index = np.argmin(np.abs(distances - lookahead_distance))
+        distances = np.linalg.norm(trajectory - self._car_position_front, axis=1)
+        lookahead_index = np.argmin(np.abs(distances))
 
 
         self.clp = trajectory[lookahead_index]
@@ -96,17 +121,88 @@ class LateralControl:
 
 
         # SHARP LEFT TRUN AHEAD
-        if(self.clp[1] > self._car_position[1] +4 or self.clp[0] > self._car_position[0]+4):
+        if(self.clp[1] > self._car_position_front[1] +4 or self.clp[0] > self._car_position_front[0]+4):
             cte = distances[lookahead_index]
-            return cte, lookahead_index, 1
+            return cte, lookahead_index, 0
 
         # SHARP RIGHT TURN AHEAD
-        if(self.clp[1] < self._car_position[1] -4 or self.clp[0] < self._car_position[0]-4):
+        if(self.clp[1] < self._car_position_front[1] -4 or self.clp[0] < self._car_position_front[0]-4):
             cte = distances[lookahead_index]
-            return cte, lookahead_index, 2
+            return cte, lookahead_index, 0
 
         # Calculate the cross-track error as the distance to the lookahead point
         cte = distances[lookahead_index]
 
         return cte, lookahead_index, 0
 
+    def control_pure_pursuit(self, trajectory, speed):
+
+
+
+        """
+        Controls the lateral movement of the car based on the given trajectory and speed.
+        Not functional at the monent
+
+        Args:
+            trajectory (numpy.ndarray): The trajectory of the car.
+            speed (float): The current speed of the car.
+
+        Returns:
+            float: The calculated steering angle.
+
+        Raises:
+            None
+
+        """
+        # Check if the trajectory is empty
+        if len(trajectory) == 0:
+            if(self.debug): print("Trajectory = 0")
+            return 0 # car should not steer if no trajectory is found
+        
+        # find cloesest point on trajectory
+        distances = np.linalg.norm(trajectory - self._car_position_back, axis=1)
+        closest_index = np.argmin(distances)
+        self.clp = trajectory[closest_index]
+
+        # calculate the steering angle
+        lookahead_distance = int(round(2, 0))
+        if(self.debug): print("Lookahead Distance: ", lookahead_distance)
+
+        if closest_index + lookahead_distance >= len(trajectory):
+            lookahead_distance = len(trajectory) - closest_index - 1
+        vector = trajectory[closest_index + lookahead_distance] - self._car_position_back
+
+        self.sclp = trajectory[closest_index + lookahead_distance]
+        
+        desired_heading_angle = np.arctan2(vector[1], vector[0])
+
+        delta = np.clip(desired_heading_angle, -self.delta_max, self.delta_max)
+
+        return delta
+    
+    def own_controller(self, trajectory, speed):
+        """
+        Controls the lateral movement of the car based on the given trajectory and speed.
+        Not functional at the moment
+
+        Args:
+            trajectory (numpy.ndarray): The trajectory of the car.
+            speed (float): The current speed of the car.
+
+        Returns:
+            float: The calculated steering angle.
+
+        Raises:
+            None
+
+        """
+        # Check if the trajectory is empty
+        if len(trajectory) == 0:
+            if(self.debug): print("Trajectory = 0")
+            return 0
+        
+        desired_ha = np.arctan2(trajectory[1], trajectory[0])
+
+        delta = np.clip(desired_ha, -self.delta_max, self.delta_max)
+        return delta
+        
