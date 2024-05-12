@@ -14,9 +14,9 @@ Team for the final project:
 
 ## DISCLAIMER
 
-Every module on its own works perfectly fine, however when combining modules we ran into some difficulties. We could limit it to difficulties whena creating the path with our calculated boundreis. We were able to do so, by leveraging our own written test files (See -> Test).
+Every module on its own works perfectly fine, however when combining modules we ran into some difficulties. We could limit it to difficulties whena creating the path with our calculated boundreis. We were able to do so, by leveraging our own written test files (see Tests).
 
-Problems mainly arise when encountering sharp turns, which causes the car to go crazy in some cases.
+Problems mainly arise when encountering sharp turns, which causes the car to not be able to properly interpolate its path.
 
 ## Module
 
@@ -268,6 +268,8 @@ which we can return as a 2-dimensional array of the path we need to take
 
 #### Improved Target Line Planning
 
+Improved Path Planning is not working at the moment. I tried a lot of different algorithims like A\* or tried to find a path that minimizes curvature from a point A to a point B, however non of them were able to execute fast enough.
+
 #### Validation
 
 The validation checks if there are single points that are not supposed to exsits. These points might be created due to errors in the Lane Detection Module.
@@ -377,6 +379,7 @@ INITAL VARIABLES:
 - delta_max: maximum steering angle
 - step: step counter
 - clp: closest lookahead point
+- debug: debug flag to enable debuf mesages
 
 USED LIBARIES:
 
@@ -403,9 +406,7 @@ def _calculate_cte(self, trajectory):
     # Calculate the distance to each point on the trajectory
     distances = np.linalg.norm(trajectory - self._car_position, axis=1)
 
-    # Find the index of the lookahead point
-    lookahead_distance = 0.0  # adjust this value as needed
-    lookahead_index = np.argmin(np.abs(distances - lookahead_distance))
+    lookahead_index = np.argmin(np.abs(distances))
 
     self.clp = trajectory[lookahead_index]
 
@@ -414,8 +415,6 @@ def _calculate_cte(self, trajectory):
 
     return cte, lookahead_index
 ```
-
-In this Cross Track-Error is the modification in comparison to the normal Stanley Controller. By adding a lookahead distance we can modify the outputs to some degree. However during testing we realised that 0.0 (which basically removes the modification) works best for the Stanley Controller.
 
 Now the lookahead_index need to be validated, so that it is element of the trajectory:
 
@@ -446,6 +445,45 @@ delta = np.arctan2(self.k * cte, speed + self.k_soft) + he
 # Limit the steering angle
 delta = np.clip(delta, -self.delta_max, self.delta_max)
 ```
+
+This is the way the Stanley Conroller should behave. However we found that there were some problems cause by sharp turns with the clostes lookahead point falling behind the car, which caused the car to believe it had to do a 180 degrees turn to continue, which caused the car then to drive in circles. To fix this, we added a "sharp turn flag" with the \_calculate_cte()-function to prevent this from happening:
+
+```python
+# SHARP LEFT TRUN AHEAD
+if(self.clp[1] > self._car_position_front[1] +4 or self.clp[0] > self._car_position_front[0]+4):
+    cte = distances[lookahead_index]
+    return cte, lookahead_index, 1
+
+# SHARP RIGHT TURN AHEAD
+if(self.clp[1] < self._car_position_front[1] -4 or self.clp[0] < self._car_position_front[0]-4):
+    cte = distances[lookahead_index]
+    return cte, lookahead_index, 2
+```
+
+This flag now lets us handle sharp corners differently:
+
+```python
+if(sharp_turn_flag == 1):
+    # SHARP LEFT TURN => steer right with 0.3 until normal CLP can be calculated again
+    if(self.debug): print("SHARP LEFT")
+    return 0.2
+
+elif(sharp_turn_flag == 2):
+    # SHARP RIGHT TURN => steer left with -0.3 until normal CLP can be calculated again
+    if(self.debug): print("SHARP RIGHT")
+    return -0.2
+```
+
+These hardcoded values aren't a nice implementation or even a fix, however they work to an accepable degree, and after spending 8+ hours on this case and reviewing it together with our teachers, we decided to leave it as is. However this is an interesting case to work on. To contribute, see Contributing!
+
+In the Lateral Control we are able to improve the path finding to a certain degree by setting the car position to a position further than the acutal front axle:
+
+```python
+self._car_position_front = np.array([48, 65])
+# Actual front axle postion: [48,63]
+```
+
+This causes the car to take sharper turns, which minimizes the total distance the car has to travel
 
 ## Tests
 
@@ -521,4 +559,4 @@ seed = 619794
 
 ## Contributing
 
-Since this project is graded we unfortunately cannot accept any contributions at the moment!
+Since this project is graded we unfortunately cannot accept any contributions at the moment! Once the project has been handed in however we will be able to accept contributions and would very much apreicate them.
