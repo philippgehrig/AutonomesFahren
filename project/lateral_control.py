@@ -6,7 +6,7 @@ import numpy as np
 class LateralControl:
 
     def __init__(self, k=0.3, k_soft=0.8, delta_max=1):
-        self._car_position = np.array([48, 62])
+        self._car_position = np.array([48, 65])
         self.k = k  # control gain
         self.k_soft = k_soft  # softening factor
         self.delta_max = delta_max  # max steering angle
@@ -46,12 +46,12 @@ class LateralControl:
         if(sharp_turn_flag == 1):
             # SHARP LEFT TURN => steer right with 0.3 until normal CLP can be calculated again
             if(self.debug): print("SHARP LEFT")
-            return 0.3
+            return 0.2
         
         elif(sharp_turn_flag == 2):
             # SHARP RIGHT TURN => steer left with -0.3 until normal CLP can be calculated again
             if(self.debug): print("SHARP RIGHT")
-            return -0.3    
+            return -0.2    
         
         else:
             desired_heading_angle = np.arctan2(trajectory[lookahead_index + 1, 1] - trajectory[lookahead_index, 1], trajectory[lookahead_index + 1, 0] - trajectory[lookahead_index, 0])    

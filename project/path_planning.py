@@ -157,13 +157,13 @@ class PathPlanning:
         if any(point > 40 for point in next_points):
             path = np.array(path)
             path = path[::-1]  # Invert the path
-            step = 1
+            step = 5
             path = path[::step] #reduce the amount of points (only each 5th point)
             return path
         
         path = np.array(path)
         path = path[::-1]  # Invert the path
-        step = 1 #reduce the amount of points (only each 12th point)
+        step = 12 #reduce the amount of points (only each 12th point)
         path = path[::step]  # Select every step-th element
         #print("PATH Length: ", len(path))
         return path
