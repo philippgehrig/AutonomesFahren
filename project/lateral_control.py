@@ -5,11 +5,11 @@ import numpy as np
 
 class LateralControl:
 
-    def __init__(self, k=0.3, k_soft=0.8, delta_max=1):
+    def __init__(self):
         self._car_position = np.array([48, 65])
-        self.k = k  # control gain
-        self.k_soft = k_soft  # softening factor
-        self.delta_max = delta_max  # max steering angle
+        self.k = 0.3 # control gain
+        self.k_soft = 0.8  # softening factor
+        self.delta_max = 1  # max steering angle
         self.step = 0  # add a step counter
         self.clp = [0,0]  # closest lookahead point
         self.sclp = [0,0]  # second closest lookahead point
