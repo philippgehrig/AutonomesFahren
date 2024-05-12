@@ -10,7 +10,7 @@ class LaneDetection:
 
     def __init__(self):
         self.debug_image = None
-        self.debug_flag = 1
+        self.debug_flag = 0
 
     def detect(self, state_image):
         self.img = np.array(state_image)[0:84, :]
