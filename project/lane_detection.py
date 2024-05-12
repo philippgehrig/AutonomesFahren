@@ -10,9 +10,10 @@ class LaneDetection:
 
     def __init__(self):
         self.debug_image = None
+        self.debug_flag = 1
 
     def detect(self, state_image):
-        self.img = np.array(state_image)[0:80, :]
+        self.img = np.array(state_image)[0:84, :]
         self.toGrayScale()
         self.img = self.edge_detection()
         self.relu()
@@ -20,17 +21,16 @@ class LaneDetection:
         left, right = self.detect_lane_boundaries(lanes)
         # left = self.thin_out_lines(left)
         # right = self.thin_out_lines(right)
-        self.debug_image = state_image
 
         # for debugging only
 
-        debug_flag = 2
-        if debug_flag == 1:     # test image for lane detection
+        if self.debug_flag == 1:     # test image for lane detection
             self.img = np.stack((self.img,) * 3, axis=-1)
+            first_image = np.array(state_image)[0:84, :]
             test_image = np.concatenate((self.img, first_image), axis=1)
             self.debug_image = test_image
-        elif debug_flag == 2:   # test image for boundry detection
-            first_image = np.array(state_image)[0:80, :]
+        elif self.debug_flag == 2:   # test image for boundry detection
+            first_image = np.array(state_image)[0:84, :]
             i = 0
             for lane in lanes:
                 for point in lane:
@@ -46,7 +46,7 @@ class LaneDetection:
                         first_image[point[1], point[0]] = [0, 255, 255]
                 i += 1
 
-            second_image = np.array(state_image)[0:80, :]
+            second_image = np.array(state_image)[0:84, :]
             for point in left:
                 second_image[point[1], point[0]] = [255, 0, 0]
             for point in right:
@@ -70,17 +70,16 @@ class LaneDetection:
             raise AttributeError("Image is not in Grayscale, please convert using .toGrayScale()")
         
         # Horizontal sobel kernel
-        kernel_horizontal = np.array([[-1, -1, -1],
-                                    [0, 0, 0],
-                                    [1, 1, 1]])
+        kernel_horizontal = np.array([[1, 1, 1],
+                                      [0, 0, 0],
+                                      [-1, -1, -1]])
 
         # Vertical sobel kernel
-        kernel_vertical = np.array([[-1, 0, 1],
-                                  [-1, 0, 1],
-                                  [-1, 0, 1]])
+        kernel_vertical = np.array([[1, 0, -1],
+                                    [1, 0, -1],
+                                    [1, 0, -1]])
 
-        # Convolution with sobel of the image
-        
+        # Convolution with sobel of the image     
         edges_horizontal = scipy.signal.convolve2d(self.img, kernel_horizontal, mode='same', boundary='symm')
         edges_vertical = scipy.signal.convolve2d(self.img, kernel_vertical, mode='same', boundary='symm')
         
@@ -89,11 +88,10 @@ class LaneDetection:
         return edge_strength
     
     def relu(self):
-        threshold = 105
-        self.img = np.where(self.img < threshold, 0, 255)
+        threshold = 130
+        self.img = np.where(self.img < threshold, 0, 255)  
     
     def area_detection(self):
-
         values, num_areas = ndimage.label(self.img)
         area_lists = [[] for _ in range(num_areas)]
         for i in range(1, num_areas + 1):
