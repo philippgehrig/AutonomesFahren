@@ -449,8 +449,76 @@ delta = np.clip(delta, -self.delta_max, self.delta_max)
 
 ## Tests
 
-We have created a variaty of different test files to check the compatibility of modules with one another.
+We have created a variaty of different test files to check the compatibility of modules with one another. The existing tests were used as a template when creating our own tests.
 
-## Contribunting
+### test_detection_with_planning.py
+
+Firstly, we implemented a test that tests lane detection together with path planning:
+
+```python
+left_lane_boundaries, right_lane_boundaries = lane_detection.detect(state_image)
+trajectory, curvature = path_planning.plan(left_lane_boundaries, right_lane_boundaries)
+
+cv_image = np.asarray(state_image, dtype=np.uint8)
+trajectory = np.array(trajectory, dtype=np.int32)
+for point in trajectory:
+    if 0 < point[0] < 96 and 0 < point[1] < 84:
+        cv_image[int(point[1]), int(point[0])] = [255, 255, 255]
+for point in left_lane_boundaries:
+    if 0 < point[0] < 96 and 0 < point[1] < 84:
+        cv_image[int(point[1]), int(point[0])] = [255, 0, 0]
+for point in right_lane_boundaries:
+    if 0 < point[0] < 96 and 0 < point[1] < 84:
+        cv_image[int(point[1]), int(point[0])] = [0, 0, 255]
+cv_image = cv2.resize(cv_image, np.asarray(state_image.shape[:2]) * 6)
+cv2.imshow('Car Racing - Lane Detection', cv_image)
+cv2.waitKey(1)
+```
+
+The test calls the two functions lane_detection.py and path_planning.py and displays their results as a coloured image. The path_planning.py function accesses the output of lane detection directly.
+
+### test_stanley_pid.py
+
+Another test was to check the compatibility of the vehicle's longitudinal and lateral control. You can see the calls of all relevant functions for the controllers:
+
+```python
+steering_angle = lateral_control.control(info['trajectory'], info['speed'])
+target_speed = longitudinal_control.predict_target_speed(curvature(info['trajectory']), info['speed'], steering_angle)
+acceleration, braking = longitudinal_control.control(info['speed'], target_speed, steering_angle)
+```
+
+Because the PID controller is not based on the trajectory but on the curvature, this is calculated within the test. A separate function calculates the sum of all curvatures and transfers this to the determination of the target speed.
+
+```python
+def curvature(trajectory):
+    dx = np.gradient(trajectory[:, 0])
+    dy = np.gradient(trajectory[:, 1])
+    ddx = np.gradient(dx)
+    ddy = np.gradient(dy)
+    curvature = 75 * np.sum(np.abs(ddx * dy - dx * ddy) / (dx ** 2 + dy ** 2) ** (3 / 2))
+    return curvature
+```
+
+### control.py
+
+During the project work, we did not use the existing test_pipeline.py file, but wrote our own test file, which was successively expanded into a pipeline. This test file was used most extensively to check the interaction of the various functions and to detect possible sources of error.
+
+```python
+left_lane_boundary, right_lane_boundary = lane_detection.detect(state_image)
+trajectory, curvature = path_planning.plan(left_lane_boundary, right_lane_boundary)
+# trajectory, curvature = path_planning.plan(left_lane_boundaries, right_lane_boundaries)
+steering_angle = lateral_control.control(trajectory, info['speed'])
+# target_speed = longitudinal_control.predict_target_speed(info['trajectory'], info['speed'], steering_angle)
+target_speed = longitudinal_control.predict_target_speed(curvature)
+acceleration, braking = longitudinal_control.control(info['speed'], target_speed, steering_angle)
+```
+
+The main goal was to complete the route with the seed shown below, which is unfortunately not possible as the situation currently stands. Various transfer parameters were used here in an attempt to achieve greater acceptance of the output variables with the subsequent functions.
+
+```python
+seed = 619794
+```
+
+## Contributing
 
 Since this project is graded we unfortunately cannot accept any contributions at the moment!
