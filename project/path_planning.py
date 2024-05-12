@@ -15,6 +15,14 @@ class PathPlanning:
         # 1: Normal Path Planning; 2: Target Line Path Planning
         planing_algorithm = 1
 
+        # slim the left and right boundaries
+        slim_factor = 1
+
+        if len(left_boundary) > 0:
+            left_boundary = left_boundary[::slim_factor]
+        if len(right_boundary) > 0:
+            right_boundary = right_boundary[::slim_factor]
+
 
         # NORMAL PATH PLANING: path always in the middle of the lane
         if planing_algorithm == 1: 
@@ -142,7 +150,6 @@ class PathPlanning:
 
         if len(path) == 0:
             return []
-        #print("Curvature [",type(curvature), "]:",  curvature)
         
         if np.isscalar(curvature):
             curvature = [curvature]
@@ -165,7 +172,6 @@ class PathPlanning:
         path = path[::-1]  # Invert the path
         step = 1 #reduce the amount of points (only each 12th point)
         path = path[::step]  # Select every step-th element
-        #print("PATH Length: ", len(path))
         return path
     
     def calculate_curvature_ahead(path, look_ahead):
