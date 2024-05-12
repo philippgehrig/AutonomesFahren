@@ -2,9 +2,6 @@ from __future__ import annotations
 import numpy as np
 import scipy
 from scipy import ndimage
-import matplotlib.pyplot as plt
-from PIL import Image, ImageOps
-from scipy.interpolate import interp1d
 
 class LaneDetection:
 
