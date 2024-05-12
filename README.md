@@ -12,6 +12,12 @@ Team for the final project:
 - [Philipp Konstantin Gehrig](https://github.com/philippgehrig)
 - [Jona Bergmann](https://github.com/inf22037)
 
+## DISCLAIMER
+
+Every module on its own works perfectly fine, however when combining modules we ran into some difficulties. We could limit it to difficulties whena creating the path with our calculated boundreis. We were able to do so, by leveraging our own written test files (See -> Test).
+
+Problems mainly arise when encountering sharp turns, which causes the car to go crazy in some cases.
+
 ## Module
 
 ### Lane Detection
@@ -41,8 +47,9 @@ def toGrayScale(self):
 
 def relu(self):
         threshold = 130
-        self.img = np.where(self.img < threshold, 0, 255)       
+        self.img = np.where(self.img < threshold, 0, 255)
 ```
+
 The convolution was initially carried out using a Laplace kernel, which produced white lines at the edges of the lanes, some of which were undercut and only one pixel thick. For more precise edge detection, separate kernels were used for horizontal and vertical detection. In addition, the image is additionally smoothed before convolution.
 
 ```python
@@ -61,7 +68,7 @@ edges_horizontal = scipy.signal.convolve2d(smoothed_image, kernel_horizontal, mo
 edges_vertical = scipy.signal.convolve2d(smoothed_image, kernel_vertical, mode='same', boundary='symm')
 
 # Kantenstärke berechnen
-edge_strength = np.sqrt(np.square(edges_horizontal) + np.square(edges_vertical))      
+edge_strength = np.sqrt(np.square(edges_horizontal) + np.square(edges_vertical))
 ```
 
 The biggest difference between the code versions lies in the assignment of the recognised pixels to the lanes. The original idea was to use the average of the coordinates to determine whether the current image represents a left or right curve:
@@ -73,7 +80,7 @@ def detect_curve(self):
     diff = centroid - middle_index
 
     # diff < 0: left curve; diff > 0 right curve
-    return diff      
+    return diff
 ```
 
 Based on the calculated route, it should be possible to judge which side of the road a pixel should belong to. The pixels were assigned line by line using a for loop.
@@ -90,7 +97,7 @@ values, num_areas = ndimage.label(self.img)
 area_lists = [[] for _ in range(num_areas)]
 for i in range(1, num_areas + 1):
     area_coordinates = np.where(values == i)
-    area_lists[i - 1].extend([(x, y) for x, y in zip(area_coordinates[1], area_coordinates[0])])     
+    area_lists[i - 1].extend([(x, y) for x, y in zip(area_coordinates[1], area_coordinates[0])])
 ```
 
 The recognised areas have a certain number of pixels. The number of pixels is used to recognise whether it is a lane, the vehicle or noise. The two lanes are detected by sorting the objects in descending order.
@@ -103,7 +110,7 @@ for i in range(1, num_areas + 1):
     area_lists[i - 1].extend([(x, y) for x, y in zip(area_coordinates[1], area_coordinates[0])])
 
 sizes = list(map(len, area_lists))
-area_lists_sorted = [x for _, x in sorted(zip(sizes, area_lists), key=lambda pair: pair[0], reverse=True)]    
+area_lists_sorted = [x for _, x in sorted(zip(sizes, area_lists), key=lambda pair: pair[0], reverse=True)]
 ```
 
 Once the lane boundaries have been recognised, the system determines which boundary is the right-hand boundary and which is the left-hand boundary.
@@ -121,7 +128,7 @@ for i in range(0, len(lanes)):
         score_lists[i] = 0
 
 # The higher the score, the more right is the lane
-sorted_lanes = [x for _, x in sorted(zip(score_lists, lanes), reverse=True)]   
+sorted_lanes = [x for _, x in sorted(zip(score_lists, lanes), reverse=True)]
 ```
 
 The lanes, which are available in the form of a list, are sorted according to their score. The sections of the lane boundary are assigned to the right or left lane using if conditions:
@@ -141,13 +148,13 @@ elif num_lanes == 4:
     right_lane = sorted_lanes[0] + sorted_lanes[3]
     return left_lane, right_lane
 else:
-    return [], []  
+    return [], []
 ```
 
 This type of lane detection is significantly less error-prone than the old code versions, and the vector programming method is also less complex. Finally, the lists containing the coordinates of the lanes in the format (x, y) are formatted in a numpy array.
 
 ```python
-return np.array(left), np.array(right)   
+return np.array(left), np.array(right)
 ```
 
 Very pixel-rich lanes are detected via the sobel kernel and the area recognition of numpy. A function that thins out the lanes was implemented in order to match the lanes with those of the environment info. However, it does not contribute to the better functioning of the overall system:
@@ -159,7 +166,7 @@ def thin_out_lines(self, lane):
 
     y_value = None
     x_value = None
-    
+
     if len(lane) > 0:
         x_value = lane[0][0]
         y_value = lane[0][1]
@@ -178,7 +185,7 @@ def thin_out_lines(self, lane):
     else:
         print('No lane found')
 
-    return new_lane  
+    return new_lane
 ```
 
 ### Path Planning
@@ -439,6 +446,10 @@ delta = np.arctan2(self.k * cte, speed + self.k_soft) + he
 # Limit the steering angle
 delta = np.clip(delta, -self.delta_max, self.delta_max)
 ```
+
+## Tests
+
+We have created a variaty of different test files to check the compatibility of modules with one another.
 
 ## Contribunting
 
